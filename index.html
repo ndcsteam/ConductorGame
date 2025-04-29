@@ -140,6 +140,9 @@
                         <option value="march">進行曲 - 拉德斯基進行曲（目標 BPM: 108）</option>
                         <option value="symphony">交響曲 - 貝多芬第五交響曲（目標 BPM: 88）</option>
                     </select>
+                    <div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                        BPM計算: 平均值計算，信號節流: 420ms
+                    </div>
                     <button id="start-game-button" class="bg-success hover:bg-opacity-80 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-success focus:ring-opacity-50 transition">
                         開始遊戲
                     </button>
@@ -340,7 +343,7 @@
         
         // 信號節流變數
         let lastSignalTime = 0;
-        const throttleTime = 400; // 固定為 400 毫秒
+        const throttleTime = 420; // 固定為 420 毫秒
         let isProcessing = false;
         
         // 遊戲相關變數
@@ -567,6 +570,23 @@
             };
         }
 
+        // 計算 BPM - 平均法
+        function calculateAverageBPM() {
+            if (timestamps.length < 2) return 0;
+            
+            // 計算時間間隔（以毫秒為單位）
+            const intervals = [];
+            for (let i = 1; i < timestamps.length; i++) {
+                intervals.push(timestamps[i] - timestamps[i - 1]);
+            }
+            
+            // 計算平均間隔
+            const averageInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
+            
+            // 轉換為 BPM（每分鐘節拍數）
+            return Math.round(60000 / averageInterval);
+        }
+        
         // 指揮動作
         function conductorBeat() {
             accelerationCount++;
@@ -578,16 +598,25 @@
                 conductorWand.classList.remove('conducting');
             }, 400);
             
-            // 計算 BPM - 使用即時計算法
+            // 記錄時間戳以計算平均 BPM
+            timestamps.push(now);
+            
+            // 保持固定數量的樣本 (最近5個)
+            if (timestamps.length > 5) {
+                timestamps.shift();
+            }
+            
             let newBpm = 0;
+            let interval = 0;
             
             if (lastTimestamp) {
-                const interval = now - lastTimestamp;
+                interval = now - lastTimestamp;
                 lastInterval = interval;
                 
-                // 只有在合理範圍內的間隔才計算 BPM（500-2000ms 大致對應 30-120 BPM）
+                // 只有在合理範圍內的間隔才計算 BPM（300-2000ms 大致對應 30-200 BPM）
                 if (interval >= 300 && interval <= 2000) {
-                    newBpm = Math.round(60000 / interval);
+                    // 使用平均值計算 BPM
+                    newBpm = calculateAverageBPM();
                     
                     // 更新遊戲數據
                     gameData.totalBeats++;
