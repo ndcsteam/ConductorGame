@@ -87,9 +87,18 @@
                         <div class="mt-4">
                             <label for="bpm-calc-method" class="block text-sm font-medium mb-1">BPM 計算方法：</label>
                             <select id="bpm-calc-method" class="block w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary">
-                                <option value="immediate">即時計算 (兩次敲擊間隔)</option>
-                                <option value="average" selected>平均值 (最近幾次敲擊)</option>
+                                <option value="immediate" selected>即時計算 (兩次敲擊間隔)</option>
+                                <option value="average">平均值 (最近幾次敲擊)</option>
                             </select>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <label for="throttle-time" class="block text-sm font-medium mb-1">信號節流時間 (ms)：</label>
+                            <div class="flex items-center">
+                                <input id="throttle-time" type="range" min="100" max="1000" step="50" value="400" 
+                                    class="w-full h-2 bg-gray-300 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                                <span id="throttle-display" class="ml-3 text-sm font-medium min-w-16 text-right">400 ms</span>
+                            </div>
                         </div>
                         
                         <div id="interval-display" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -115,6 +124,7 @@
                 <li>點擊「連接 Micro:bit」按鈕</li>
                 <li>當發送 Micro:bit 檢測到明顯加速時，接收器將收到「b」字符並顯示於此界面</li>
                 <li>系統會自動計算 BPM (每分鐘節拍數)，您可選擇計算方法</li>
+                <li>調整「信號節流時間」以控制最小節拍間隔</li>
             </ol>
         </div>
     </div>
@@ -145,6 +155,11 @@
         let bpm = 0;
         let lastInterval = 0;
         const MAX_SAMPLES = 5; // 減少樣本數量以更快反應變化
+        
+        // 信號節流變數
+        let lastSignalTime = 0;
+        let throttleTime = 400; // 毫秒
+        let isProcessing = false;
 
         // DOM 元素
         const connectButton = document.getElementById('connect-button');
@@ -157,6 +172,14 @@
         const bpmDisplay = document.getElementById('bpm-display');
         const bpmCalcMethod = document.getElementById('bpm-calc-method');
         const intervalDisplay = document.getElementById('interval-display');
+        const throttleTimeInput = document.getElementById('throttle-time');
+        const throttleDisplay = document.getElementById('throttle-display');
+        
+        // 更新節流時間顯示
+        throttleTimeInput.addEventListener('input', () => {
+            throttleTime = parseInt(throttleTimeInput.value);
+            throttleDisplay.textContent = `${throttleTime} ms`;
+        });
 
         // 檢查 Web Serial API 支援
         if (!('serial' in navigator)) {
@@ -238,7 +261,28 @@
             
             // 檢查是否接收到 "b" 信號
             if (text.includes('b')) {
+                // 節流處理 - 忽略節流時間內的連續信號
+                const now = performance.now();
+                if (now - lastSignalTime < throttleTime) {
+                    console.log(`信號節流: 間隔 ${Math.round(now - lastSignalTime)}ms < ${throttleTime}ms, 忽略`);
+                    return;
+                }
+                
+                // 如果正在處理中，也忽略
+                if (isProcessing) {
+                    return;
+                }
+                
+                isProcessing = true;
+                lastSignalTime = now;
+                
+                // 處理加速度檢測
                 accelerationDetected();
+                
+                // 設定短時間後重置處理標誌，以確保信號處理完畢
+                setTimeout(() => {
+                    isProcessing = false;
+                }, 50);
             }
         }
 
