@@ -136,6 +136,25 @@
                         <div class="text-gray-500 dark:text-gray-400 italic">尚無檢測記錄</div>
                     </div>
                 </div>
+                
+                <!-- 調試信息面板 -->
+                <div id="debug-panel" class="mt-4 bg-white dark:bg-gray-900 p-4 rounded-lg shadow border border-yellow-300 dark:border-yellow-700">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-semibold text-yellow-600 dark:text-yellow-400">詳細信息</h3>
+                        <button id="toggle-debug" class="text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded-full hover:bg-yellow-200 dark:hover:bg-yellow-800">顯示/隱藏</button>
+                    </div>
+                    <div id="debug-content" class="hidden">
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>當前間隔 (ms)：<span id="debug-interval">0</span></div>
+                            <div>平均間隔 (ms)：<span id="debug-avg-interval">0</span></div>
+                            <div>節拍數：<span id="debug-beat-count">0</span></div>
+                            <div>窗口 (秒)：<span id="debug-window">5</span></div>
+                        </div>
+                        <div class="mt-2 text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto">
+                            <pre id="debug-times">[]</pre>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -176,6 +195,9 @@
         let lastBeatTime = 0;
         let bpm = 0;
         
+        // 調試信息
+        let debugMode = false; // 設為 true 以顯示調試信息
+        
         // DOM 元素
         const connectButton = document.getElementById('connect-button');
         const connectionStatus = document.getElementById('connection-status');
@@ -190,6 +212,21 @@
         const signalThresholdInput = document.getElementById('signal-threshold');
         const resetButton = document.getElementById('reset-button');
         const beatsGraph = document.getElementById('beats-graph');
+        
+        // 調試面板相關元素
+        const debugPanel = document.getElementById('debug-panel');
+        const toggleDebugBtn = document.getElementById('toggle-debug');
+        const debugContent = document.getElementById('debug-content');
+        const debugInterval = document.getElementById('debug-interval');
+        const debugAvgInterval = document.getElementById('debug-avg-interval');
+        const debugBeatCount = document.getElementById('debug-beat-count');
+        const debugWindow = document.getElementById('debug-window');
+        const debugTimes = document.getElementById('debug-times');
+        
+        // 調試面板顯示/隱藏
+        toggleDebugBtn.addEventListener('click', () => {
+            debugContent.classList.toggle('hidden');
+        });
         
         // 檢查 Web Serial API 支援
         if (!('serial' in navigator)) {
@@ -292,6 +329,12 @@
                 return; // 信號太快，可能是噪聲，忽略
             }
             
+            // 計算並顯示當前間隔
+            if (lastBeatTime) {
+                const currentInterval = now - lastBeatTime;
+                debugInterval.textContent = currentInterval;
+            }
+            
             // 記錄本次信號時間
             lastBeatTime = now;
             beatTimes.push(now);
@@ -324,16 +367,33 @@
             // 只保留窗口期內的節拍時間
             beatTimes = beatTimes.filter(time => time >= cutoffTime);
             
+            // 更新調試信息
+            debugBeatCount.textContent = beatTimes.length;
+            debugWindow.textContent = windowSeconds;
+            debugTimes.textContent = JSON.stringify(beatTimes.map(t => t % 100000));
+            
             // 不夠兩個節拍無法計算 BPM
             if (beatTimes.length < 2) {
                 bpm = 0;
                 bpmDisplay.textContent = '0';
                 accelerationText.textContent = '等待更多信號...';
+                
+                // 更新調試信息
+                debugInterval.textContent = '0';
+                debugAvgInterval.textContent = '0';
                 return;
             }
             
-            // 計算窗口內的信號數量，乘以 60 秒 / 窗口秒數 = BPM
-            bpm = Math.round((beatTimes.length - 1) * (60 / windowSeconds));
+            // 計算 BPM (基於信號間隔)
+            // 計算所有間隔的平均值(毫秒)
+            let totalIntervals = 0;
+            for (let i = 1; i < beatTimes.length; i++) {
+                totalIntervals += (beatTimes[i] - beatTimes[i-1]);
+            }
+            
+            const avgInterval = totalIntervals / (beatTimes.length - 1);
+            // 將平均間隔(毫秒)轉換為每分鐘節拍數
+            bpm = Math.round(60000 / avgInterval);
             bpmDisplay.textContent = bpm;
             
             // 更新節拍間隔圖表
