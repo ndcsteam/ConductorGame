@@ -116,6 +116,22 @@
                 <li>X 值代表左右傾斜，Y 值代表前後傾斜</li>
             </ol>
         </div>
+        
+        <div class="mt-4 bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-lg">
+            <h3 class="font-semibold text-yellow-700 dark:text-yellow-400">故障排除:</h3>
+            <ul class="list-disc ml-5 mt-2 text-gray-700 dark:text-gray-300 space-y-1">
+                <li>請確保 Micro:bit 已啟動並運行您的程式</li>
+                <li>確認藍牙已在您的裝置上啟用</li>
+                <li>如果連接失敗，請嘗試重啟 Micro:bit</li>
+                <li>本應用需要使用 Chrome、Edge 或 Opera 等支援 Web Bluetooth API 的瀏覽器</li>
+                <li>連接問題可在瀏覽器控制台（F12）中查看詳細錯誤信息</li>
+            </ul>
+        </div>
+        
+        <div id="debugInfo" class="mt-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg hidden">
+            <h3 class="font-semibold text-gray-700 dark:text-gray-300">診斷信息:</h3>
+            <div id="debugContent" class="mt-2 text-sm font-mono whitespace-pre-wrap text-gray-600 dark:text-gray-400"></div>
+        </div>
     </div>
 
     <script>
@@ -132,9 +148,29 @@
             }
         });
         
+        // 調試功能 - 點擊連接狀態文本 10 次啟用調試模式
+        let debugClickCount = 0;
+        function toggleDebugMode() {
+            debugClickCount++;
+            if (debugClickCount >= 10) {
+                document.getElementById('debugInfo').classList.toggle('hidden');
+                debugClickCount = 0;
+            }
+        }
+        
         // Micro:bit 藍牙服務和特徵 UUID
         const ACCELEROMETER_SERVICE_UUID = 'e95d0753-251d-470a-a062-fa1922dfa9a8';
         const ACCELEROMETER_DATA_UUID = 'e95dca4b-251d-470a-a062-fa1922dfa9a8';
+        // 添加其他服務 UUID 以增加兼容性
+        const MICROBIT_SERVICES = [
+            ACCELEROMETER_SERVICE_UUID,
+            'e95d127b-251d-470a-a062-fa1922dfa9a8', // 磁力計服務
+            'e95d9882-251d-470a-a062-fa1922dfa9a8', // 按鈕服務
+            'e95dd91d-251d-470a-a062-fa1922dfa9a8', // IO PIN 服務
+            'e95d93ee-251d-470a-a062-fa1922dfa9a8', // LED 服務
+            'e95d6100-251d-470a-a062-fa1922dfa9a8', // 溫度服務
+            'e95d93af-251d-470a-a062-fa1922dfa9a8'  // UART 服務
+        ];
         
         // 元素引用
         const connectButton = document.getElementById('connectButton');
@@ -143,11 +179,28 @@
         const yValue = document.getElementById('yValue');
         const positionDot = document.getElementById('positionDot');
         const visualizationArea = document.getElementById('visualizationArea');
+        const debugContent = document.getElementById('debugContent');
         
         // 全域變數
         let bluetoothDevice;
         let accelerometerCharacteristic;
         let isConnected = false;
+        
+        // 添加調試日誌功能
+        function logDebug(message) {
+            if (debugContent) {
+                const timestamp = new Date().toLocaleTimeString();
+                debugContent.innerHTML += `[${timestamp}] ${message}\n`;
+                // 限制日誌長度
+                if (debugContent.innerHTML.length > 10000) {
+                    debugContent.innerHTML = debugContent.innerHTML.substring(5000);
+                }
+            }
+            console.log(message);
+        }
+        
+        // 連接狀態文本事件
+        connectionStatus.addEventListener('click', toggleDebugMode);
         
         // 初始化點的位置
         updateDotPosition(0, 0);
@@ -172,22 +225,59 @@
             try {
                 connectionStatus.textContent = '正在掃描設備...';
                 
-                // 請求設備
+                // 請求設備 - 使用更寬鬆的設備過濾和添加所有相關服務
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ namePrefix: 'BBC micro:bit' }],
-                    optionalServices: [ACCELEROMETER_SERVICE_UUID]
+                    filters: [
+                        { namePrefix: 'BBC micro:bit' },
+                        { namePrefix: 'micro:bit' }
+                    ],
+                    optionalServices: MICROBIT_SERVICES
                 });
                 
-                connectionStatus.textContent = '正在連接...';
+                connectionStatus.textContent = '正在連接到 ' + bluetoothDevice.name + '...';
                 
                 // 連接到 GATT 服務器
                 const server = await bluetoothDevice.gatt.connect();
+                connectionStatus.textContent = 'GATT 服務器已連接，正在尋找加速度計服務...';
                 
-                // 獲取加速度計服務
-                const service = await server.getPrimaryService(ACCELEROMETER_SERVICE_UUID);
+                // 列出所有可用服務用於診斷
+                const services = await server.getPrimaryServices();
+                console.log('可用服務數量:', services.length);
                 
-                // 獲取加速度計特徵
-                accelerometerCharacteristic = await service.getCharacteristic(ACCELEROMETER_DATA_UUID);
+                try {
+                    // 獲取加速度計服務
+                    const service = await server.getPrimaryService(ACCELEROMETER_SERVICE_UUID);
+                    connectionStatus.textContent = '找到加速度計服務，正在獲取數據特徵...';
+                    
+                    // 獲取加速度計特徵
+                    accelerometerCharacteristic = await service.getCharacteristic(ACCELEROMETER_DATA_UUID);
+                } catch (error) {
+                    console.error('無法獲取加速度計服務或特徵:', error);
+                    
+                    // 嘗試替代方法，枚舉所有服務尋找加速度計服務
+                    connectionStatus.textContent = '嘗試替代連接方法...';
+                    let foundAccelerometerService = false;
+                    
+                    for (const service of services) {
+                        try {
+                            const characteristics = await service.getCharacteristics();
+                            for (const characteristic of characteristics) {
+                                if (characteristic.uuid === ACCELEROMETER_DATA_UUID) {
+                                    accelerometerCharacteristic = characteristic;
+                                    foundAccelerometerService = true;
+                                    break;
+                                }
+                            }
+                            if (foundAccelerometerService) break;
+                        } catch (e) {
+                            console.log('無法讀取服務特徵:', e);
+                        }
+                    }
+                    
+                    if (!accelerometerCharacteristic) {
+                        throw new Error('找不到加速度計服務，請確保 Micro:bit 已啟動加速度計服務');
+                    }
+                }
                 
                 // 訂閱通知
                 await accelerometerCharacteristic.startNotifications();
@@ -216,20 +306,68 @@
         
         // 處理加速度計數據
         function handleAccelerometerData(event) {
-            const value = event.target.value;
-            const dataView = value.buffer ? new DataView(value.buffer) : new DataView(value);
-            
-            // 讀取加速度計數據 (小端格式)
-            const x = dataView.getInt16(0, true);
-            const y = dataView.getInt16(2, true);
-            const z = dataView.getInt16(4, true);
-            
-            // 更新顯示
-            xValue.textContent = x;
-            yValue.textContent = y;
-            
-            // 更新點的位置
-            updateDotPosition(x, y);
+            try {
+                const value = event.target.value;
+                const dataView = value.buffer ? new DataView(value.buffer) : new DataView(value);
+                
+                // 讀取加速度計數據 (小端格式)
+                // 嘗試不同的數據格式解析
+                let x, y, z;
+                
+                // 標準 micro:bit 格式 (每個軸2字節，小端序)
+                if (dataView.byteLength >= 6) {
+                    x = dataView.getInt16(0, true);
+                    y = dataView.getInt16(2, true);
+                    z = dataView.getInt16(4, true);
+                } 
+                // 備用格式：如果數據較短，嘗試以單字節讀取
+                else if (dataView.byteLength >= 3) {
+                    x = dataView.getInt8(0);
+                    y = dataView.getInt8(1);
+                    z = dataView.getInt8(2);
+                    // 縮放到 -1024 至 1024 範圍
+                    x = x * 8;
+                    y = y * 8;
+                    z = z * 8;
+                }
+                // 如果還是無法解析，設為0
+                else {
+                    x = 0;
+                    y = 0;
+                    z = 0;
+                    logDebug('數據格式無法解析：字節數 = ' + dataView.byteLength);
+                }
+                
+                // 輸出到調試日誌
+                logDebug(`加速度數據：X=${x}, Y=${y}, Z=${z}`);
+                
+                // 更新顯示
+                xValue.textContent = x;
+                yValue.textContent = y;
+                
+                // 更新點的位置
+                updateDotPosition(x, y);
+            } catch (error) {
+                console.error('處理加速度計數據時出錯:', error);
+                logDebug('加速度數據處理錯誤: ' + error.message);
+                
+                // 嘗試獲取數據結構信息
+                if (event.target && event.target.value) {
+                    const rawData = [];
+                    const byteLength = event.target.value.byteLength;
+                    logDebug('原始數據長度: ' + byteLength + ' 字節');
+                    
+                    try {
+                        const rawView = new Uint8Array(event.target.value.buffer || event.target.value);
+                        for (let i = 0; i < rawView.length; i++) {
+                            rawData.push(rawView[i]);
+                        }
+                        logDebug('原始數據字節: ' + JSON.stringify(rawData));
+                    } catch (e) {
+                        logDebug('無法讀取原始數據: ' + e.message);
+                    }
+                }
+            }
         }
         
         // 更新點的視覺位置
