@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Micro:bit 加速度檢測器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .dark {
+            --bg-main: #181818;
+            --text-main: #f3f4f6;
+        }
+        
+        .light {
+            --bg-main: #ffffff;
+            --text-main: #1f2937;
+        }
+        
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .pulse {
+            animation: pulse 0.8s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+        <h1 class="text-3xl font-bold mb-6 text-center">Micro:bit 加速度檢測器</h1>
+
+        <div class="mb-8 p-6 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-md">
+            <div id="connection-panel" class="mb-4">
+                <h2 class="text-xl font-semibold mb-4">USB 連接</h2>
+                <p class="mb-4">連接 Micro:bit 接收器（已設置接收頻道 250）</p>
+                <button id="connect-button" class="bg-primary hover:bg-opacity-80 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition">
+                    連接 Micro:bit
+                </button>
+                <div id="connection-status" class="mt-4 text-sm font-medium">未連接</div>
+            </div>
+
+            <div id="detection-panel" class="hidden">
+                <h2 class="text-xl font-semibold mb-4">加速度檢測</h2>
+                <div id="status-display" class="flex flex-col items-center justify-center py-10">
+                    <div id="signal-indicator" class="w-24 h-24 rounded-full flex items-center justify-center bg-gray-300 dark:bg-gray-700 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                    </div>
+                    <div id="acceleration-text" class="text-lg font-medium">等待加速度信號...</div>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="font-semibold mb-2">檢測歷史</h3>
+                    <div id="history-container" class="max-h-44 overflow-y-auto bg-white dark:bg-gray-900 p-3 rounded border border-gray-300 dark:border-gray-700 text-sm">
+                        <div class="text-gray-500 dark:text-gray-400 italic">尚無檢測記錄</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-sm text-gray-600 dark:text-gray-400 mt-8">
+            <h3 class="font-semibold mb-2">使用說明：</h3>
+            <ol class="list-decimal pl-5 space-y-1">
+                <li>確保接收 Micro:bit 已正確設置在頻道 250</li>
+                <li>將接收 Micro:bit 透過 USB 連接至此裝置</li>
+                <li>點擊「連接 Micro:bit」按鈕</li>
+                <li>當發送 Micro:bit 檢測到明顯加速時，接收器將收到「b」字符並顯示於此界面</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // 檢測深色模式偏好
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // 全局變數
+        let port;
+        let reader;
+        let reading = false;
+        let textDecoder = new TextDecoder();
+        let accelerationCount = 0;
+
+        // DOM 元素
+        const connectButton = document.getElementById('connect-button');
+        const connectionStatus = document.getElementById('connection-status');
+        const connectionPanel = document.getElementById('connection-panel');
+        const detectionPanel = document.getElementById('detection-panel');
+        const signalIndicator = document.getElementById('signal-indicator');
+        const accelerationText = document.getElementById('acceleration-text');
+        const historyContainer = document.getElementById('history-container');
+
+        // 檢查 Web Serial API 支援
+        if (!('serial' in navigator)) {
+            connectionStatus.textContent = '您的瀏覽器不支援 Web Serial API。請使用 Chrome 或 Edge 瀏覽器。';
+            connectionStatus.classList.add('text-red-500');
+            connectButton.disabled = true;
+            connectButton.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        // 連接按鈕點擊事件
+        connectButton.addEventListener('click', async () => {
+            try {
+                // 請求 serial port
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 115200 });
+                
+                connectionStatus.textContent = '已連接 Micro:bit 接收器';
+                connectionStatus.classList.add('text-green-500');
+                connectButton.textContent = '已連接';
+                connectButton.classList.add('bg-green-500');
+                connectButton.disabled = true;
+                
+                // 顯示檢測面板
+                connectionPanel.classList.add('mb-6', 'pb-6', 'border-b', 'border-gray-300', 'dark:border-gray-700');
+                detectionPanel.classList.remove('hidden');
+                
+                // 開始讀取數據
+                readSerialData();
+                
+            } catch (error) {
+                console.error('連接錯誤:', error);
+                connectionStatus.textContent = '連接失敗: ' + (error.message || '未知錯誤');
+                connectionStatus.classList.add('text-red-500');
+            }
+        });
+
+        // 讀取串口數據
+        async function readSerialData() {
+            if (reading) return;
+            
+            reading = true;
+            reader = port.readable.getReader();
+            
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    
+                    if (done) {
+                        break;
+                    }
+                    
+                    // 處理接收到的數據
+                    processData(value);
+                }
+            } catch (error) {
+                console.error('讀取錯誤:', error);
+            } finally {
+                reader.releaseLock();
+                reading = false;
+                
+                // 如果連接還存在，則嘗試再次讀取
+                if (port && port.readable) {
+                    setTimeout(readSerialData, 100);
+                } else {
+                    connectionStatus.textContent = '連接已斷開';
+                    connectionStatus.classList.remove('text-green-500');
+                    connectionStatus.classList.add('text-red-500');
+                    connectButton.textContent = '重新連接';
+                    connectButton.classList.remove('bg-green-500');
+                    connectButton.disabled = false;
+                }
+            }
+        }
+
+        // 處理接收到的數據
+        function processData(data) {
+            const text = textDecoder.decode(data).trim();
+            console.log('接收到數據:', text);
+            
+            // 檢查是否接收到 "b" 信號
+            if (text.includes('b')) {
+                accelerationDetected();
+            }
+        }
+
+        // 處理加速度檢測事件
+        function accelerationDetected() {
+            accelerationCount++;
+            
+            // 更新加速度指示
+            signalIndicator.classList.add('bg-primary');
+            accelerationText.textContent = '檢測到加速度!';
+            
+            // 添加脈衝動畫
+            signalIndicator.classList.add('pulse');
+            
+            // 更新歷史記錄
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            const historyItem = document.createElement('div');
+            historyItem.className = 'mb-1 pb-1 border-b border-gray-200 dark:border-gray-800';
+            historyItem.innerHTML = `<span class="font-medium">${timeString}</span>: 檢測到加速度信號 #${accelerationCount}`;
+            
+            // 清除"尚無檢測記錄"提示
+            if (accelerationCount === 1) {
+                historyContainer.innerHTML = '';
+            }
+            
+            // 添加到歷史容器
+            historyContainer.prepend(historyItem);
+            
+            // 3秒後重置視覺狀態
+            setTimeout(() => {
+                signalIndicator.classList.remove('bg-primary', 'pulse');
+                accelerationText.textContent = '等待加速度信號...';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
