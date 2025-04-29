@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Micro:bit BPM 檢測器</title>
+    <title>Micro:bit 加速度檢測器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -35,32 +35,23 @@
         }
 
         .pulse {
-            animation: pulse 0.3s ease-in-out;
+            animation: pulse 0.8s ease-in-out;
         }
 
         @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.3); opacity: 0.8; }
-        }
-
-        /* BPM 顯示動畫 */
-        .beat-circle {
-            transition: transform 0.1s ease-out;
-        }
-        
-        .beat-circle.beating {
-            transform: scale(1.2);
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
     </style>
 </head>
 <body class="min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 class="text-3xl font-bold mb-6 text-center">Micro:bit BPM 檢測器</h1>
+        <h1 class="text-3xl font-bold mb-6 text-center">Micro:bit 加速度檢測器</h1>
 
         <div class="mb-8 p-6 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-md">
             <div id="connection-panel" class="mb-4">
                 <h2 class="text-xl font-semibold mb-4">USB 連接</h2>
-                <p class="mb-4">連接 Micro:bit 接收器（設置接收頻道 250）</p>
+                <p class="mb-4">連接 Micro:bit 接收器（已設置接收頻道 250）</p>
                 <button id="connect-button" class="bg-primary hover:bg-opacity-80 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition">
                     連接 Micro:bit
                 </button>
@@ -68,91 +59,20 @@
             </div>
 
             <div id="detection-panel" class="hidden">
-                <div class="flex flex-col sm:flex-row items-center gap-6 mb-6">
-                    <!-- BPM 顯示 -->
-                    <div class="flex-1 flex flex-col items-center justify-center p-4 bg-white dark:bg-gray-900 rounded-lg shadow">
-                        <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">BPM</div>
-                        <div id="bpm-display" class="text-4xl font-bold text-primary">0</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">每分鐘節拍數</div>
+                <h2 class="text-xl font-semibold mb-4">加速度檢測</h2>
+                <div id="status-display" class="flex flex-col items-center justify-center py-10">
+                    <div id="signal-indicator" class="w-24 h-24 rounded-full flex items-center justify-center bg-gray-300 dark:bg-gray-700 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
                     </div>
-                    
-                    <!-- 視覺指示器 -->
-                    <div class="flex-1 flex flex-col items-center">
-                        <div id="beat-container" class="relative w-32 h-32 flex items-center justify-center">
-                            <div class="beat-circle absolute w-20 h-20 rounded-full bg-primary bg-opacity-20"></div>
-                            <div id="signal-indicator" class="w-16 h-16 rounded-full flex items-center justify-center bg-primary bg-opacity-30 z-10">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                            </div>
-                        </div>
-                        <div id="acceleration-text" class="text-sm font-medium mt-2">等待信號...</div>
-                    </div>
+                    <div id="acceleration-text" class="text-lg font-medium">等待加速度信號...</div>
                 </div>
 
-                <!-- 即時信號強度指示 -->
-                <div class="mb-6 bg-white dark:bg-gray-900 p-4 rounded-lg shadow">
-                    <h3 class="font-semibold mb-2 text-sm">最近節拍間隔</h3>
-                    <div class="h-12 overflow-hidden">
-                        <div id="beats-graph" class="flex items-end h-full gap-1">
-                            <!-- 動態填入節拍間隔圖表 -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 控制選項 -->
-                <div class="bg-white dark:bg-gray-900 p-4 rounded-lg shadow mb-6">
-                    <h3 class="font-semibold mb-3">BPM 設定</h3>
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <div class="flex-1">
-                            <label for="bpm-window" class="block text-sm font-medium mb-1">計算窗口 (秒)</label>
-                            <select id="bpm-window" class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded py-2 px-3 text-base">
-                                <option value="3">3 秒</option>
-                                <option value="5" selected>5 秒</option>
-                                <option value="10">10 秒</option>
-                                <option value="15">15 秒</option>
-                            </select>
-                        </div>
-                        <div class="flex-1">
-                            <label for="signal-threshold" class="block text-sm font-medium mb-1">最小間隔 (毫秒)</label>
-                            <input type="number" id="signal-threshold" min="50" max="1000" step="10" value="200"
-                                class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded py-2 px-3 text-base">
-                        </div>
-                        <div class="flex-1 flex items-end">
-                            <button id="reset-button" class="w-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 py-2 px-3 rounded text-gray-800 dark:text-gray-200 font-medium transition">
-                                重置 BPM
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 信號歷史記錄 -->
-                <div class="bg-white dark:bg-gray-900 p-4 rounded-lg shadow">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="font-semibold">檢測歷史</h3>
-                        <span id="signal-count" class="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-full">0</span>
-                    </div>
-                    <div id="history-container" class="max-h-32 overflow-y-auto text-sm">
+                <div class="mt-6">
+                    <h3 class="font-semibold mb-2">檢測歷史</h3>
+                    <div id="history-container" class="max-h-44 overflow-y-auto bg-white dark:bg-gray-900 p-3 rounded border border-gray-300 dark:border-gray-700 text-sm">
                         <div class="text-gray-500 dark:text-gray-400 italic">尚無檢測記錄</div>
-                    </div>
-                </div>
-                
-                <!-- 調試信息面板 -->
-                <div id="debug-panel" class="mt-4 bg-white dark:bg-gray-900 p-4 rounded-lg shadow border border-yellow-300 dark:border-yellow-700">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="font-semibold text-yellow-600 dark:text-yellow-400">詳細信息</h3>
-                        <button id="toggle-debug" class="text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded-full hover:bg-yellow-200 dark:hover:bg-yellow-800">顯示/隱藏</button>
-                    </div>
-                    <div id="debug-content" class="hidden">
-                        <div class="grid grid-cols-2 gap-2 text-sm">
-                            <div>當前間隔 (ms)：<span id="debug-interval">0</span></div>
-                            <div>平均間隔 (ms)：<span id="debug-avg-interval">0</span></div>
-                            <div>節拍數：<span id="debug-beat-count">0</span></div>
-                            <div>窗口 (秒)：<span id="debug-window">5</span></div>
-                        </div>
-                        <div class="mt-2 text-xs bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-x-auto">
-                            <pre id="debug-times">[]</pre>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -161,11 +81,10 @@
         <div class="text-sm text-gray-600 dark:text-gray-400 mt-8">
             <h3 class="font-semibold mb-2">使用說明：</h3>
             <ol class="list-decimal pl-5 space-y-1">
-                <li>確保接收 Micro:bit 已設置頻道 250</li>
+                <li>確保接收 Micro:bit 已正確設置在頻道 250</li>
                 <li>將接收 Micro:bit 透過 USB 連接至此裝置</li>
                 <li>點擊「連接 Micro:bit」按鈕</li>
-                <li>當發送 Micro:bit 檢測到加速度變化時，系統將顯示節拍並計算 BPM</li>
-                <li>可調整 BPM 計算窗口和信號閾值以獲得更準確的結果</li>
+                <li>當發送 Micro:bit 檢測到明顯加速時，接收器將收到「b」字符並顯示於此界面</li>
             </ol>
         </div>
     </div>
@@ -188,16 +107,8 @@
         let reader;
         let reading = false;
         let textDecoder = new TextDecoder();
-        let signalCount = 0;
-        
-        // BPM 計算相關變數
-        let beatTimes = [];
-        let lastBeatTime = 0;
-        let bpm = 0;
-        
-        // 調試信息
-        let debugMode = false; // 設為 true 以顯示調試信息
-        
+        let accelerationCount = 0;
+
         // DOM 元素
         const connectButton = document.getElementById('connect-button');
         const connectionStatus = document.getElementById('connection-status');
@@ -206,28 +117,7 @@
         const signalIndicator = document.getElementById('signal-indicator');
         const accelerationText = document.getElementById('acceleration-text');
         const historyContainer = document.getElementById('history-container');
-        const bpmDisplay = document.getElementById('bpm-display');
-        const signalCountDisplay = document.getElementById('signal-count');
-        const bpmWindowSelect = document.getElementById('bpm-window');
-        const signalThresholdInput = document.getElementById('signal-threshold');
-        const resetButton = document.getElementById('reset-button');
-        const beatsGraph = document.getElementById('beats-graph');
-        
-        // 調試面板相關元素
-        const debugPanel = document.getElementById('debug-panel');
-        const toggleDebugBtn = document.getElementById('toggle-debug');
-        const debugContent = document.getElementById('debug-content');
-        const debugInterval = document.getElementById('debug-interval');
-        const debugAvgInterval = document.getElementById('debug-avg-interval');
-        const debugBeatCount = document.getElementById('debug-beat-count');
-        const debugWindow = document.getElementById('debug-window');
-        const debugTimes = document.getElementById('debug-times');
-        
-        // 調試面板顯示/隱藏
-        toggleDebugBtn.addEventListener('click', () => {
-            debugContent.classList.toggle('hidden');
-        });
-        
+
         // 檢查 Web Serial API 支援
         if (!('serial' in navigator)) {
             connectionStatus.textContent = '您的瀏覽器不支援 Web Serial API。請使用 Chrome 或 Edge 瀏覽器。';
@@ -235,17 +125,7 @@
             connectButton.disabled = true;
             connectButton.classList.add('opacity-50', 'cursor-not-allowed');
         }
-        
-        // 重置 BPM 計算
-        resetButton.addEventListener('click', () => {
-            beatTimes = [];
-            lastBeatTime = 0;
-            bpm = 0;
-            bpmDisplay.textContent = '0';
-            updateBeatsGraph();
-            accelerationText.textContent = '等待信號...';
-        });
-        
+
         // 連接按鈕點擊事件
         connectButton.addEventListener('click', async () => {
             try {
@@ -263,9 +143,6 @@
                 connectionPanel.classList.add('mb-6', 'pb-6', 'border-b', 'border-gray-300', 'dark:border-gray-700');
                 detectionPanel.classList.remove('hidden');
                 
-                // 準備 BPM 圖表
-                updateBeatsGraph();
-                
                 // 開始讀取數據
                 readSerialData();
                 
@@ -276,7 +153,7 @@
             }
         });
 
-        // 讀取串口數據 - 優化版本，減少不必要的處理
+        // 讀取串口數據
         async function readSerialData() {
             if (reading) return;
             
@@ -291,13 +168,8 @@
                         break;
                     }
                     
-                    // 直接處理接收到的數據，不做額外轉換
-                    const text = textDecoder.decode(value).trim();
-                    
-                    // 檢查是否接收到 "b" 信號
-                    if (text.includes('b')) {
-                        processSignal();
-                    }
+                    // 處理接收到的數據
+                    processData(value);
                 }
             } catch (error) {
                 console.error('讀取錯誤:', error);
@@ -307,7 +179,7 @@
                 
                 // 如果連接還存在，則嘗試再次讀取
                 if (port && port.readable) {
-                    readSerialData();
+                    setTimeout(readSerialData, 100);
                 } else {
                     connectionStatus.textContent = '連接已斷開';
                     connectionStatus.classList.remove('text-green-500');
@@ -319,165 +191,48 @@
             }
         }
 
-        // 處理接收到的信號 - 優化版本
-        function processSignal() {
-            const now = Date.now();
-            const minInterval = parseInt(signalThresholdInput.value);
+        // 處理接收到的數據
+        function processData(data) {
+            const text = textDecoder.decode(data).trim();
+            console.log('接收到數據:', text);
             
-            // 檢查與上次信號的間隔是否足夠大
-            if (lastBeatTime && (now - lastBeatTime) < minInterval) {
-                return; // 信號太快，可能是噪聲，忽略
+            // 檢查是否接收到 "b" 信號
+            if (text.includes('b')) {
+                accelerationDetected();
             }
+        }
+
+        // 處理加速度檢測事件
+        function accelerationDetected() {
+            accelerationCount++;
             
-            // 計算並顯示當前間隔
-            if (lastBeatTime) {
-                const currentInterval = now - lastBeatTime;
-                debugInterval.textContent = currentInterval;
-            }
+            // 更新加速度指示
+            signalIndicator.classList.add('bg-primary');
+            accelerationText.textContent = '檢測到加速度!';
             
-            // 記錄本次信號時間
-            lastBeatTime = now;
-            beatTimes.push(now);
-            signalCount++;
-            
-            // 更新信號指示器
+            // 添加脈衝動畫
             signalIndicator.classList.add('pulse');
-            setTimeout(() => signalIndicator.classList.remove('pulse'), 300);
-            
-            // 計算並更新 BPM
-            calculateBPM();
-            
-            // 更新視覺效果
-            updateVisualBeat();
-            
-            // 更新信號計數顯示
-            signalCountDisplay.textContent = signalCount;
             
             // 更新歷史記錄
-            updateHistory(now);
-        }
-        
-        // 計算 BPM
-        function calculateBPM() {
-            const windowSeconds = parseInt(bpmWindowSelect.value);
-            const windowMs = windowSeconds * 1000;
-            const now = Date.now();
-            const cutoffTime = now - windowMs;
-            
-            // 只保留窗口期內的節拍時間
-            beatTimes = beatTimes.filter(time => time >= cutoffTime);
-            
-            // 更新調試信息
-            debugBeatCount.textContent = beatTimes.length;
-            debugWindow.textContent = windowSeconds;
-            debugTimes.textContent = JSON.stringify(beatTimes.map(t => t % 100000));
-            
-            // 不夠兩個節拍無法計算 BPM
-            if (beatTimes.length < 2) {
-                bpm = 0;
-                bpmDisplay.textContent = '0';
-                accelerationText.textContent = '等待更多信號...';
-                
-                // 更新調試信息
-                debugInterval.textContent = '0';
-                debugAvgInterval.textContent = '0';
-                return;
-            }
-            
-            // 計算 BPM (基於信號間隔)
-            // 計算所有間隔的平均值(毫秒)
-            let totalIntervals = 0;
-            for (let i = 1; i < beatTimes.length; i++) {
-                totalIntervals += (beatTimes[i] - beatTimes[i-1]);
-            }
-            
-            const avgInterval = totalIntervals / (beatTimes.length - 1);
-            // 將平均間隔(毫秒)轉換為每分鐘節拍數
-            bpm = Math.round(60000 / avgInterval);
-            bpmDisplay.textContent = bpm;
-            
-            // 更新節拍間隔圖表
-            updateBeatsGraph();
-            
-            // 更新狀態文字
-            accelerationText.textContent = `當前 BPM: ${bpm}`;
-        }
-        
-        // 更新節拍間隔圖表
-        function updateBeatsGraph() {
-            beatsGraph.innerHTML = '';
-            
-            if (beatTimes.length < 2) {
-                return;
-            }
-            
-            // 計算相鄰節拍間的間隔時間
-            const intervals = [];
-            for (let i = 1; i < beatTimes.length; i++) {
-                intervals.push(beatTimes[i] - beatTimes[i-1]);
-            }
-            
-            // 只顯示最近的 10 個間隔
-            const recentIntervals = intervals.slice(-10);
-            
-            // 找出最大間隔來標準化高度
-            const maxInterval = Math.max(...recentIntervals);
-            
-            // 為每個間隔創建圖表柱狀條
-            recentIntervals.forEach(interval => {
-                const height = Math.max(20, Math.min(100, (interval / maxInterval) * 100));
-                const bar = document.createElement('div');
-                
-                // 依據間隔大小著色
-                let color;
-                if (interval < 300) {
-                    color = 'bg-red-400 dark:bg-red-600'; // 間隔太短，顯示紅色
-                } else if (interval > 2000) {
-                    color = 'bg-blue-400 dark:bg-blue-600'; // 間隔太長，顯示藍色
-                } else {
-                    color = 'bg-green-400 dark:bg-green-600'; // 正常間隔，顯示綠色
-                }
-                
-                bar.className = `w-full ${color} rounded-t`;
-                bar.style.height = `${height}%`;
-                bar.title = `${interval} ms`;
-                
-                beatsGraph.appendChild(bar);
-            });
-        }
-        
-        // 更新視覺節拍效果
-        function updateVisualBeat() {
-            const beatCircle = document.querySelector('.beat-circle');
-            beatCircle.classList.add('beating');
-            setTimeout(() => beatCircle.classList.remove('beating'), 100);
-        }
-        
-        // 更新歷史記錄
-        function updateHistory(timestamp) {
-            const now = new Date(timestamp);
-            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
-            
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
             const historyItem = document.createElement('div');
-            historyItem.className = 'flex justify-between py-1 border-b border-gray-100 dark:border-gray-800';
+            historyItem.className = 'mb-1 pb-1 border-b border-gray-200 dark:border-gray-800';
+            historyItem.innerHTML = `<span class="font-medium">${timeString}</span>: 檢測到加速度信號 #${accelerationCount}`;
             
             // 清除"尚無檢測記錄"提示
-            if (signalCount === 1) {
+            if (accelerationCount === 1) {
                 historyContainer.innerHTML = '';
             }
             
-            // 添加到歷史容器（限制顯示最近10條）
-            historyItem.innerHTML = `
-                <span class="font-medium">${timeString}</span>
-                <span class="text-gray-500 dark:text-gray-400">信號 #${signalCount}</span>
-            `;
+            // 添加到歷史容器
+            historyContainer.prepend(historyItem);
             
-            historyContainer.insertBefore(historyItem, historyContainer.firstChild);
-            
-            // 限制歷史記錄數量
-            while (historyContainer.children.length > 10) {
-                historyContainer.removeChild(historyContainer.lastChild);
-            }
+            // 3秒後重置視覺狀態
+            setTimeout(() => {
+                signalIndicator.classList.remove('bg-primary', 'pulse');
+                accelerationText.textContent = '等待加速度信號...';
+            }, 3000);
         }
     </script>
 </body>
