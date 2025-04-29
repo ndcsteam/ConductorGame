@@ -1,145 +1,151 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="h-full">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Micro:bit 相對位置讀取器</title>
+    <title>Micro:bit XYZ 座標讀取器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#5D5CDE',
-                    }
-                }
-            }
-        }
+    tailwind.config = {
+        darkMode: 'class',
+        theme: {
+            extend: {
+                colors: {
+                    primary: '#5D5CDE',
+                },
+            },
+        },
+    }
     </script>
     <style>
-        .position-dot {
-            width: 20px;
-            height: 20px;
-            background-color: #5D5CDE;
-            border-radius: 50%;
-            position: absolute;
-            transform: translate(-50%, -50%);
-            transition: all 0.2s ease-out;
-        }
-        
-        .dark .position-dot {
-            background-color: #8583FF;
-        }
-        
-        .visualization-area {
-            border: 2px solid #e2e8f0;
+        .chart-container {
             position: relative;
-        }
-        
-        .dark .visualization-area {
-            border-color: #4b5563;
-        }
-        
-        /* 座標軸 */
-        .x-axis, .y-axis {
-            position: absolute;
-            background-color: #e2e8f0;
-        }
-        
-        .dark .x-axis, .dark .y-axis {
-            background-color: #4b5563;
-        }
-        
-        .x-axis {
+            height: 300px;
             width: 100%;
-            height: 1px;
-            top: 50%;
         }
-        
-        .y-axis {
-            height: 100%;
-            width: 1px;
-            left: 50%;
+        .chart-bar {
+            position: absolute;
+            bottom: 0;
+            width: 30%;
+            transition: height 0.2s ease-out;
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+        .x-bar {
+            left: 5%;
+            background-color: #ef4444;
+        }
+        .y-bar {
+            left: 35%;
+            background-color: #22c55e;
+        }
+        .z-bar {
+            left: 65%;
+            background-color: #3b82f6;
+        }
+        .dark .chart-container {
+            background-color: #1e1e1e;
+        }
+        .dark .value-display {
+            background-color: #2d2d2d;
         }
     </style>
 </head>
-<body class="h-full bg-white dark:bg-gray-900 dark:text-white transition-colors duration-200">
-    <div class="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 class="text-3xl font-bold text-center text-primary dark:text-indigo-400 mb-6">Micro:bit 相對位置讀取器</h1>
-        
-        <div class="mb-8">
-            <button id="connectButton" class="w-full py-3 bg-primary text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-colors duration-200 text-base">
-                連接 Micro:bit
-            </button>
-            <p id="connectionStatus" class="mt-3 text-center text-gray-600 dark:text-gray-400">尚未連接設備</p>
-        </div>
+<body class="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <h1 class="text-3xl font-bold mb-6 text-center text-primary">Micro:bit XYZ 座標讀取器</h1>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 shadow-md">
-                <h2 class="text-xl font-semibold mb-4">數值顯示</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-gray-700 dark:text-gray-300 mb-1">X 軸:</label>
-                        <div class="flex items-center">
-                            <div id="xValue" class="text-2xl font-mono font-bold">0</div>
-                            <div class="ml-2 text-gray-600 dark:text-gray-400">(範圍: -1024 至 1024)</div>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 dark:text-gray-300 mb-1">Y 軸:</label>
-                        <div class="flex items-center">
-                            <div id="yValue" class="text-2xl font-mono font-bold">0</div>
-                            <div class="ml-2 text-gray-600 dark:text-gray-400">(範圍: -1024 至 1024)</div>
-                        </div>
+            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 shadow-md">
+                <h2 class="text-xl font-semibold mb-4">連接與控制</h2>
+                
+                <div class="mb-4">
+                    <button id="connectBtn" class="w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-md transition">
+                        連接 Micro:bit
+                    </button>
+                </div>
+                
+                <div id="statusContainer" class="mb-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-md">
+                    <p id="statusText">尚未連接</p>
+                </div>
+                
+                <div class="flex flex-col space-y-2">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="autoUpdate" class="w-5 h-5 text-primary rounded focus:ring-primary" checked>
+                        <span class="ml-2">自動更新數據</span>
+                    </label>
+                    
+                    <div class="flex items-center">
+                        <label for="updateInterval" class="mr-2">更新間隔 (毫秒):</label>
+                        <input type="number" id="updateInterval" min="50" max="5000" step="50" value="100" 
+                               class="w-24 py-1 px-2 text-base border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700">
                     </div>
                 </div>
             </div>
             
-            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 shadow-md">
-                <h2 class="text-xl font-semibold mb-4">視覺化顯示</h2>
-                <div id="visualizationArea" class="visualization-area w-full h-48 rounded-lg bg-white dark:bg-gray-700">
-                    <div class="x-axis"></div>
-                    <div class="y-axis"></div>
-                    <div id="positionDot" class="position-dot"></div>
+            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 shadow-md">
+                <h2 class="text-xl font-semibold mb-4">XYZ 座標數據</h2>
+                
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="value-display bg-gray-200 dark:bg-gray-700 rounded-md p-3 text-center">
+                        <div class="text-red-500 font-bold text-lg">X</div>
+                        <div id="xValue" class="text-2xl font-mono">0</div>
+                    </div>
+                    <div class="value-display bg-gray-200 dark:bg-gray-700 rounded-md p-3 text-center">
+                        <div class="text-green-500 font-bold text-lg">Y</div>
+                        <div id="yValue" class="text-2xl font-mono">0</div>
+                    </div>
+                    <div class="value-display bg-gray-200 dark:bg-gray-700 rounded-md p-3 text-center">
+                        <div class="text-blue-500 font-bold text-lg">Z</div>
+                        <div id="zValue" class="text-2xl font-mono">0</div>
+                    </div>
                 </div>
-                <p class="mt-3 text-sm text-gray-600 dark:text-gray-400 text-center">傾斜 Micro:bit 來移動點的位置</p>
+                
+                <div class="chart-container bg-gray-200 rounded-md p-2">
+                    <div id="xBar" class="chart-bar x-bar" style="height: 50%;"></div>
+                    <div id="yBar" class="chart-bar y-bar" style="height: 50%;"></div>
+                    <div id="zBar" class="chart-bar z-bar" style="height: 50%;"></div>
+                    <div class="absolute bottom-0 left-0 w-full border-t border-gray-400 dark:border-gray-600"></div>
+                </div>
+                
+                <div class="flex justify-between mt-2 px-2 text-sm">
+                    <div class="text-red-500">X</div>
+                    <div class="text-green-500">Y</div>
+                    <div class="text-blue-500">Z</div>
+                </div>
             </div>
         </div>
         
-        <div class="mt-8 bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
-            <h3 class="font-semibold text-blue-700 dark:text-blue-400">使用說明:</h3>
-            <ol class="list-decimal ml-5 mt-2 text-gray-700 dark:text-gray-300 space-y-1">
-                <li>點擊「連接 Micro:bit」按鈕</li>
-                <li>從彈出的藍牙設備列表中選擇您的 Micro:bit</li>
-                <li>連接後，傾斜 Micro:bit 來查看位置變化</li>
-                <li>X 值代表左右傾斜，Y 值代表前後傾斜</li>
-            </ol>
-        </div>
-        
-        <div class="mt-4 bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-lg">
-            <h3 class="font-semibold text-yellow-700 dark:text-yellow-400">故障排除:</h3>
-            <ul class="list-disc ml-5 mt-2 text-gray-700 dark:text-gray-300 space-y-1">
-                <li>請確保 Micro:bit 已啟動並運行您的程式</li>
-                <li>確認藍牙已在您的裝置上啟用</li>
-                <li>如果連接失敗，請嘗試重啟 Micro:bit</li>
-                <li>本應用需要使用 Chrome、Edge 或 Opera 等支援 Web Bluetooth API 的瀏覽器</li>
-                <li>連接問題可在瀏覽器控制台（F12）中查看詳細錯誤信息</li>
-            </ul>
-        </div>
-        
-        <div id="debugInfo" class="mt-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg hidden">
-            <h3 class="font-semibold text-gray-700 dark:text-gray-300">診斷信息:</h3>
-            <div id="debugContent" class="mt-2 text-sm font-mono whitespace-pre-wrap text-gray-600 dark:text-gray-400"></div>
+        <div class="mt-6 bg-gray-100 dark:bg-gray-800 rounded-lg p-6 shadow-md">
+            <h2 class="text-xl font-semibold mb-4">數據記錄</h2>
+            <div class="overflow-auto max-h-60">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="bg-gray-200 dark:bg-gray-700">
+                            <th class="py-2 px-4 text-left">時間</th>
+                            <th class="py-2 px-4 text-left">X</th>
+                            <th class="py-2 px-4 text-left">Y</th>
+                            <th class="py-2 px-4 text-left">Z</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataLog">
+                        <!-- 數據紀錄將會動態添加在這裡 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-3 flex justify-end">
+                <button id="clearLogBtn" class="bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 py-1 px-3 rounded-md">
+                    清除記錄
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        // 檢測深色模式
+        // 檢測暗色模式
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.classList.add('dark');
         }
-        
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
             if (event.matches) {
                 document.documentElement.classList.add('dark');
@@ -147,289 +153,233 @@
                 document.documentElement.classList.remove('dark');
             }
         });
-        
-        // 調試功能 - 點擊連接狀態文本 10 次啟用調試模式
-        let debugClickCount = 0;
-        function toggleDebugMode() {
-            debugClickCount++;
-            if (debugClickCount >= 10) {
-                document.getElementById('debugInfo').classList.toggle('hidden');
-                debugClickCount = 0;
-            }
-        }
-        
-        // Micro:bit 藍牙服務和特徵 UUID
+
+        // Micro:bit 服務和特性 UUID
         const ACCELEROMETER_SERVICE_UUID = 'e95d0753-251d-470a-a062-fa1922dfa9a8';
         const ACCELEROMETER_DATA_UUID = 'e95dca4b-251d-470a-a062-fa1922dfa9a8';
-        // 添加其他服務 UUID 以增加兼容性
-        const MICROBIT_SERVICES = [
-            ACCELEROMETER_SERVICE_UUID,
-            'e95d127b-251d-470a-a062-fa1922dfa9a8', // 磁力計服務
-            'e95d9882-251d-470a-a062-fa1922dfa9a8', // 按鈕服務
-            'e95dd91d-251d-470a-a062-fa1922dfa9a8', // IO PIN 服務
-            'e95d93ee-251d-470a-a062-fa1922dfa9a8', // LED 服務
-            'e95d6100-251d-470a-a062-fa1922dfa9a8', // 溫度服務
-            'e95d93af-251d-470a-a062-fa1922dfa9a8'  // UART 服務
-        ];
-        
-        // 元素引用
-        const connectButton = document.getElementById('connectButton');
-        const connectionStatus = document.getElementById('connectionStatus');
+        const ACCELEROMETER_PERIOD_UUID = 'e95dfb24-251d-470a-a062-fa1922dfa9a8';
+
+        // 全域變數
+        let microbitDevice = null;
+        let accelerometerCharacteristic = null;
+        let notificationsEnabled = false;
+        let updateIntervalId = null;
+
+        // DOM 元素
+        const connectBtn = document.getElementById('connectBtn');
+        const statusText = document.getElementById('statusText');
+        const autoUpdateCheckbox = document.getElementById('autoUpdate');
+        const updateIntervalInput = document.getElementById('updateInterval');
         const xValue = document.getElementById('xValue');
         const yValue = document.getElementById('yValue');
-        const positionDot = document.getElementById('positionDot');
-        const visualizationArea = document.getElementById('visualizationArea');
-        const debugContent = document.getElementById('debugContent');
-        
-        // 全域變數
-        let bluetoothDevice;
-        let accelerometerCharacteristic;
-        let isConnected = false;
-        
-        // 添加調試日誌功能
-        function logDebug(message) {
-            if (debugContent) {
-                const timestamp = new Date().toLocaleTimeString();
-                debugContent.innerHTML += `[${timestamp}] ${message}\n`;
-                // 限制日誌長度
-                if (debugContent.innerHTML.length > 10000) {
-                    debugContent.innerHTML = debugContent.innerHTML.substring(5000);
-                }
-            }
-            console.log(message);
-        }
-        
-        // 連接狀態文本事件
-        connectionStatus.addEventListener('click', toggleDebugMode);
-        
-        // 初始化點的位置
-        updateDotPosition(0, 0);
-        
-        // 連接按鈕點擊事件
-        connectButton.addEventListener('click', async () => {
-            if (isConnected) {
-                await disconnectDevice();
-            } else {
-                await connectToMicrobit();
-            }
-        });
-        
+        const zValue = document.getElementById('zValue');
+        const xBar = document.getElementById('xBar');
+        const yBar = document.getElementById('yBar');
+        const zBar = document.getElementById('zBar');
+        const dataLog = document.getElementById('dataLog');
+        const clearLogBtn = document.getElementById('clearLogBtn');
+
         // 連接到 Micro:bit
-        async function connectToMicrobit() {
-            if (!navigator.bluetooth) {
-                connectionStatus.textContent = '您的瀏覽器不支援藍牙功能';
-                connectionStatus.classList.add('text-red-500');
-                return;
-            }
-            
+        connectBtn.addEventListener('click', async () => {
             try {
-                connectionStatus.textContent = '正在掃描設備...';
+                if (microbitDevice && microbitDevice.gatt.connected) {
+                    await disconnectFromDevice();
+                    return;
+                }
+
+                statusText.textContent = '正在尋找 Micro:bit 裝置...';
                 
-                // 請求設備 - 使用更寬鬆的設備過濾和添加所有相關服務
-                bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    filters: [
-                        { namePrefix: 'BBC micro:bit' },
-                        { namePrefix: 'micro:bit' }
-                    ],
-                    optionalServices: MICROBIT_SERVICES
+                // 檢查瀏覽器支援
+                if (!navigator.bluetooth) {
+                    throw new Error('您的瀏覽器不支援 Web Bluetooth API。請使用 Chrome、Edge 或其他支援的瀏覽器。');
+                }
+                
+                // 請求裝置
+                microbitDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: 'BBC micro:bit' }],
+                    optionalServices: [ACCELEROMETER_SERVICE_UUID]
                 });
                 
-                connectionStatus.textContent = '正在連接到 ' + bluetoothDevice.name + '...';
+                statusText.textContent = '連接中...';
                 
-                // 連接到 GATT 服務器
-                const server = await bluetoothDevice.gatt.connect();
-                connectionStatus.textContent = 'GATT 服務器已連接，正在尋找加速度計服務...';
+                // 連接到 GATT 伺服器
+                const server = await microbitDevice.gatt.connect();
                 
-                // 列出所有可用服務用於診斷
-                const services = await server.getPrimaryServices();
-                console.log('可用服務數量:', services.length);
+                // 獲取加速度計服務
+                const service = await server.getPrimaryService(ACCELEROMETER_SERVICE_UUID);
                 
-                try {
-                    // 獲取加速度計服務
-                    const service = await server.getPrimaryService(ACCELEROMETER_SERVICE_UUID);
-                    connectionStatus.textContent = '找到加速度計服務，正在獲取數據特徵...';
-                    
-                    // 獲取加速度計特徵
-                    accelerometerCharacteristic = await service.getCharacteristic(ACCELEROMETER_DATA_UUID);
-                } catch (error) {
-                    console.error('無法獲取加速度計服務或特徵:', error);
-                    
-                    // 嘗試替代方法，枚舉所有服務尋找加速度計服務
-                    connectionStatus.textContent = '嘗試替代連接方法...';
-                    let foundAccelerometerService = false;
-                    
-                    for (const service of services) {
-                        try {
-                            const characteristics = await service.getCharacteristics();
-                            for (const characteristic of characteristics) {
-                                if (characteristic.uuid === ACCELEROMETER_DATA_UUID) {
-                                    accelerometerCharacteristic = characteristic;
-                                    foundAccelerometerService = true;
-                                    break;
-                                }
-                            }
-                            if (foundAccelerometerService) break;
-                        } catch (e) {
-                            console.log('無法讀取服務特徵:', e);
-                        }
-                    }
-                    
-                    if (!accelerometerCharacteristic) {
-                        throw new Error('找不到加速度計服務，請確保 Micro:bit 已啟動加速度計服務');
-                    }
+                // 獲取加速度計特性
+                accelerometerCharacteristic = await service.getCharacteristic(ACCELEROMETER_DATA_UUID);
+                
+                // 設置加速度計頻率 (10 = 100ms)
+                const periodCharacteristic = await service.getCharacteristic(ACCELEROMETER_PERIOD_UUID);
+                const period = new Uint8Array([10]);
+                await periodCharacteristic.writeValue(period);
+                
+                // 啟動通知
+                await accelerometerCharacteristic.startNotifications();
+                accelerometerCharacteristic.addEventListener('characteristicvaluechanged', handleAccelerometerData);
+                notificationsEnabled = true;
+                
+                statusText.textContent = '已連接';
+                connectBtn.textContent = '中斷連接';
+                
+                // 設置間隔自動更新
+                if (autoUpdateCheckbox.checked) {
+                    startAutoUpdate();
                 }
                 
-                // 訂閱通知
-                await accelerometerCharacteristic.startNotifications();
-                
-                // 處理數據更新
-                accelerometerCharacteristic.addEventListener('characteristicvaluechanged', handleAccelerometerData);
-                
-                // 更新連接狀態
-                isConnected = true;
-                connectionStatus.textContent = '已連接到 ' + bluetoothDevice.name;
-                connectionStatus.classList.remove('text-red-500');
-                connectionStatus.classList.add('text-green-600', 'dark:text-green-400');
-                connectButton.textContent = '斷開連接';
-                connectButton.classList.remove('bg-primary', 'hover:bg-indigo-700');
-                connectButton.classList.add('bg-red-500', 'hover:bg-red-600');
-                
-                // 監聽斷開連接事件
-                bluetoothDevice.addEventListener('gattserverdisconnected', handleDisconnection);
+                // 監聽裝置中斷連接事件
+                microbitDevice.addEventListener('gattserverdisconnected', handleDisconnection);
                 
             } catch (error) {
                 console.error('連接錯誤:', error);
-                connectionStatus.textContent = '連接失敗: ' + (error.message || '未知錯誤');
-                connectionStatus.classList.add('text-red-500');
+                statusText.textContent = `錯誤: ${error.message}`;
+                await disconnectFromDevice();
             }
-        }
-        
+        });
+
         // 處理加速度計數據
         function handleAccelerometerData(event) {
-            try {
-                const value = event.target.value;
-                const dataView = value.buffer ? new DataView(value.buffer) : new DataView(value);
-                
-                // 讀取加速度計數據 (小端格式)
-                // 嘗試不同的數據格式解析
-                let x, y, z;
-                
-                // 標準 micro:bit 格式 (每個軸2字節，小端序)
-                if (dataView.byteLength >= 6) {
-                    x = dataView.getInt16(0, true);
-                    y = dataView.getInt16(2, true);
-                    z = dataView.getInt16(4, true);
-                } 
-                // 備用格式：如果數據較短，嘗試以單字節讀取
-                else if (dataView.byteLength >= 3) {
-                    x = dataView.getInt8(0);
-                    y = dataView.getInt8(1);
-                    z = dataView.getInt8(2);
-                    // 縮放到 -1024 至 1024 範圍
-                    x = x * 8;
-                    y = y * 8;
-                    z = z * 8;
-                }
-                // 如果還是無法解析，設為0
-                else {
-                    x = 0;
-                    y = 0;
-                    z = 0;
-                    logDebug('數據格式無法解析：字節數 = ' + dataView.byteLength);
-                }
-                
-                // 輸出到調試日誌
-                logDebug(`加速度數據：X=${x}, Y=${y}, Z=${z}`);
-                
-                // 更新顯示
-                xValue.textContent = x;
-                yValue.textContent = y;
-                
-                // 更新點的位置
-                updateDotPosition(x, y);
-            } catch (error) {
-                console.error('處理加速度計數據時出錯:', error);
-                logDebug('加速度數據處理錯誤: ' + error.message);
-                
-                // 嘗試獲取數據結構信息
-                if (event.target && event.target.value) {
-                    const rawData = [];
-                    const byteLength = event.target.value.byteLength;
-                    logDebug('原始數據長度: ' + byteLength + ' 字節');
-                    
-                    try {
-                        const rawView = new Uint8Array(event.target.value.buffer || event.target.value);
-                        for (let i = 0; i < rawView.length; i++) {
-                            rawData.push(rawView[i]);
-                        }
-                        logDebug('原始數據字節: ' + JSON.stringify(rawData));
-                    } catch (e) {
-                        logDebug('無法讀取原始數據: ' + e.message);
-                    }
-                }
+            const value = event.target.value;
+            const x = value.getInt16(0, true);
+            const y = value.getInt16(2, true);
+            const z = value.getInt16(4, true);
+            
+            updateDisplay(x, y, z);
+            logData(x, y, z);
+        }
+
+        // 更新顯示
+        function updateDisplay(x, y, z) {
+            xValue.textContent = x;
+            yValue.textContent = y;
+            zValue.textContent = z;
+            
+            // 更新圖表，範圍從 -2000 到 2000，轉換為 0-100%
+            const xPercent = ((x + 2000) / 4000) * 100;
+            const yPercent = ((y + 2000) / 4000) * 100;
+            const zPercent = ((z + 2000) / 4000) * 100;
+            
+            xBar.style.height = `${Math.min(Math.max(xPercent, 0), 100)}%`;
+            yBar.style.height = `${Math.min(Math.max(yPercent, 0), 100)}%`;
+            zBar.style.height = `${Math.min(Math.max(zPercent, 0), 100)}%`;
+        }
+
+        // 記錄數據
+        function logData(x, y, z) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="py-1 px-4 border-t border-gray-200 dark:border-gray-700">${timeString}</td>
+                <td class="py-1 px-4 border-t border-gray-200 dark:border-gray-700 text-red-500">${x}</td>
+                <td class="py-1 px-4 border-t border-gray-200 dark:border-gray-700 text-green-500">${y}</td>
+                <td class="py-1 px-4 border-t border-gray-200 dark:border-gray-700 text-blue-500">${z}</td>
+            `;
+            
+            dataLog.insertBefore(row, dataLog.firstChild);
+            
+            // 限制記錄數量
+            if (dataLog.children.length > 100) {
+                dataLog.removeChild(dataLog.lastChild);
             }
         }
-        
-        // 更新點的視覺位置
-        function updateDotPosition(x, y) {
-            const areaWidth = visualizationArea.offsetWidth;
-            const areaHeight = visualizationArea.offsetHeight;
+
+        // 中斷裝置連接
+        async function disconnectFromDevice() {
+            if (updateIntervalId) {
+                clearInterval(updateIntervalId);
+                updateIntervalId = null;
+            }
             
-            // 將 micro:bit 加速度計範圍 (-1024 到 1024) 映射到視覺化區域
-            // 反轉 y 軸方向以符合直覺 (正值為上)
-            const normalizedX = (x + 1024) / 2048;
-            const normalizedY = 1 - ((y + 1024) / 2048); // Y 軸反轉
+            if (accelerometerCharacteristic && notificationsEnabled) {
+                try {
+                    await accelerometerCharacteristic.stopNotifications();
+                    accelerometerCharacteristic.removeEventListener('characteristicvaluechanged', handleAccelerometerData);
+                    notificationsEnabled = false;
+                } catch (e) {
+                    console.log('停止通知時發生錯誤:', e);
+                }
+            }
             
-            // 計算點的位置，限制在邊界內
-            const dotX = Math.max(10, Math.min(areaWidth - 10, normalizedX * areaWidth));
-            const dotY = Math.max(10, Math.min(areaHeight - 10, normalizedY * areaHeight));
+            if (microbitDevice && microbitDevice.gatt.connected) {
+                try {
+                    microbitDevice.removeEventListener('gattserverdisconnected', handleDisconnection);
+                    await microbitDevice.gatt.disconnect();
+                } catch (e) {
+                    console.log('中斷連接時發生錯誤:', e);
+                }
+            }
             
-            // 更新點的位置
-            positionDot.style.left = `${dotX}px`;
-            positionDot.style.top = `${dotY}px`;
+            microbitDevice = null;
+            accelerometerCharacteristic = null;
+            statusText.textContent = '已中斷連接';
+            connectBtn.textContent = '連接 Micro:bit';
         }
-        
-        // 處理斷開連接
+
+        // 處理意外中斷連接
         function handleDisconnection() {
-            isConnected = false;
-            connectionStatus.textContent = '設備已斷開連接';
-            connectionStatus.classList.remove('text-green-600', 'dark:text-green-400');
-            connectionStatus.classList.add('text-gray-600', 'dark:text-gray-400');
-            connectButton.textContent = '連接 Micro:bit';
-            connectButton.classList.remove('bg-red-500', 'hover:bg-red-600');
-            connectButton.classList.add('bg-primary', 'hover:bg-indigo-700');
+            console.log('裝置已中斷連接');
+            statusText.textContent = '裝置已中斷連接';
+            connectBtn.textContent = '連接 Micro:bit';
             
-            // 重置數值
-            xValue.textContent = '0';
-            yValue.textContent = '0';
-            updateDotPosition(0, 0);
+            if (updateIntervalId) {
+                clearInterval(updateIntervalId);
+                updateIntervalId = null;
+            }
+            
+            microbitDevice = null;
+            accelerometerCharacteristic = null;
+            notificationsEnabled = false;
         }
-        
-        // 斷開設備連接
-        async function disconnectDevice() {
-            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
-                // 停止通知
-                if (accelerometerCharacteristic) {
+
+        // 自動更新設置
+        function startAutoUpdate() {
+            if (updateIntervalId) {
+                clearInterval(updateIntervalId);
+            }
+            
+            const interval = parseInt(updateIntervalInput.value);
+            updateIntervalId = setInterval(async () => {
+                if (accelerometerCharacteristic && microbitDevice && microbitDevice.gatt.connected) {
                     try {
-                        await accelerometerCharacteristic.stopNotifications();
-                        accelerometerCharacteristic.removeEventListener('characteristicvaluechanged', handleAccelerometerData);
+                        // 讀取最新數據
+                        const value = await accelerometerCharacteristic.readValue();
+                        const x = value.getInt16(0, true);
+                        const y = value.getInt16(2, true);
+                        const z = value.getInt16(4, true);
+                        
+                        updateDisplay(x, y, z);
+                        logData(x, y, z);
                     } catch (error) {
-                        console.error('停止通知錯誤:', error);
+                        console.error('讀取數據錯誤:', error);
                     }
                 }
-                
-                // 斷開連接
-                bluetoothDevice.gatt.disconnect();
-            } else {
-                handleDisconnection();
-            }
+            }, interval);
         }
-        
-        // 視窗大小變化時更新點的位置
-        window.addEventListener('resize', () => {
-            const x = parseInt(xValue.textContent) || 0;
-            const y = parseInt(yValue.textContent) || 0;
-            updateDotPosition(x, y);
+
+        // 自動更新切換
+        autoUpdateCheckbox.addEventListener('change', () => {
+            if (autoUpdateCheckbox.checked && microbitDevice && microbitDevice.gatt.connected) {
+                startAutoUpdate();
+            } else if (updateIntervalId) {
+                clearInterval(updateIntervalId);
+                updateIntervalId = null;
+            }
+        });
+
+        // 更新間隔變更
+        updateIntervalInput.addEventListener('change', () => {
+            if (autoUpdateCheckbox.checked && microbitDevice && microbitDevice.gatt.connected) {
+                startAutoUpdate();
+            }
+        });
+
+        // 清除日誌
+        clearLogBtn.addEventListener('click', () => {
+            dataLog.innerHTML = '';
         });
     </script>
 </body>
