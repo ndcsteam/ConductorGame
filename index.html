@@ -608,13 +608,8 @@
     
     <!-- 封面頁 -->
     <div id="cover-page" class="cover-page page-transition">
-        <div class="absolute top-0 left-0 w-full h-full overflow-hidden">
-            <div style="--note-index: 1" class="floating-note text-4xl animate-float-slow" style="top: 15%; left: 80%;">♩</div>
-            <div style="--note-index: 2" class="floating-note text-3xl animate-float-slow" style="top: 25%; left: 20%;">♪</div>
-            <div style="--note-index: 3" class="floating-note text-5xl animate-float-slow" style="top: 50%; left: 15%;">♫</div>
-            <div style="--note-index: 4" class="floating-note text-4xl animate-float-slow" style="top: 60%; left: 70%;">♬</div>
-            <div style="--note-index: 5" class="floating-note text-3xl animate-float-slow" style="top: 75%; left: 40%;">♩</div>
-            <div style="--note-index: 6" class="floating-note text-5xl animate-float-slow" style="top: 30%; left: 60%;">♪</div>
+        <div id="music-notes-container" class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+            <!-- 音符將由JS動態生成 -->
         </div>
         
         <h1 class="cover-title text-5xl md:text-6xl font-bold mb-4 text-center text-conductor-gold">交響樂指揮家</h1>
@@ -842,18 +837,91 @@
     </div>
 
     <script>
-        // 頁面切換控制
+        // 頁面切換控制與動態音符生成
         document.addEventListener("DOMContentLoaded", function() {
             const coverPage = document.getElementById('cover-page');
             const mainContent = document.getElementById('main-content');
             const startGameButton = document.getElementById('start-game-button');
+            const musicNotesContainer = document.getElementById('music-notes-container');
             
+            // 生成動態音符
+            createDynamicMusicNotes();
+            
+            // 頁面切換事件
             startGameButton.addEventListener('click', function() {
                 coverPage.classList.add('page-hidden');
                 setTimeout(() => {
                     mainContent.classList.remove('page-hidden');
                 }, 400);
             });
+            
+            // 動態生成音符函數
+            function createDynamicMusicNotes() {
+                // 清空容器
+                musicNotesContainer.innerHTML = '';
+                
+                // 音符符號庫
+                const musicSymbols = ['♩', '♪', '♫', '♬', '𝄞', '𝅘𝅥𝅮', '𝅗𝅥', '𝄐', '𝄑'];
+                
+                // 創建40-60個音符
+                const totalNotes = Math.floor(Math.random() * 21) + 40;
+                
+                for (let i = 0; i < totalNotes; i++) {
+                    const note = document.createElement('div');
+                    
+                    // 設置音符樣式類
+                    note.className = 'absolute pointer-events-none';
+                    
+                    // 選擇隨機音符符號
+                    const symbolIndex = Math.floor(Math.random() * musicSymbols.length);
+                    note.textContent = musicSymbols[symbolIndex];
+                    
+                    // 隨機大小 (16-40px)
+                    const size = Math.floor(Math.random() * 25) + 16;
+                    note.style.fontSize = `${size}px`;
+                    
+                    // 隨機位置
+                    note.style.left = `${Math.random() * 100}%`;
+                    note.style.top = `${Math.random() * 100}%`;
+                    
+                    // 金色效果，隨機透明度 (0.1-0.4)
+                    const opacity = (Math.random() * 0.3 + 0.1).toFixed(2);
+                    note.style.color = `rgba(212, 175, 55, ${opacity})`;
+                    note.style.textShadow = '0 0 8px rgba(212, 175, 55, 0.3)';
+                    
+                    // 添加漂浮動畫
+                    const duration = Math.floor(Math.random() * 60) + 30; // 30-90秒
+                    const delay = Math.floor(Math.random() * 20); // 0-20秒
+                    const distance = Math.floor(Math.random() * 30) + 10; // 10-40px
+                    
+                    // 動畫樣式
+                    note.style.transition = 'transform 0.5s ease';
+                    note.style.animation = `floatNote ${duration}s ease-in-out ${delay}s infinite`;
+                    
+                    // 為每個音符創建唯一的動畫名稱
+                    const animationName = `floatNote_${i}`;
+                    
+                    // 添加特殊的移動動畫
+                    const keyframes = `
+                    @keyframes ${animationName} {
+                        0%, 100% { transform: translate(0, 0) rotate(0deg); }
+                        25% { transform: translate(${Math.random() * 20 - 10}px, -${distance}px) rotate(${Math.random() * 10 - 5}deg); }
+                        50% { transform: translate(${Math.random() * 40 - 20}px, -${distance * 1.5}px) rotate(${Math.random() * 20 - 10}deg); }
+                        75% { transform: translate(${Math.random() * 20 - 10}px, -${distance}px) rotate(${Math.random() * 10 - 5}deg); }
+                    }`;
+                    
+                    // 添加動畫樣式
+                    const style = document.createElement('style');
+                    style.textContent = keyframes;
+                    document.head.appendChild(style);
+                    
+                    // 使用唯一的動畫名稱
+                    note.style.animation = `${animationName} ${duration}s ease-in-out ${delay}s infinite`;
+                    
+                    // 添加至容器
+                    musicNotesContainer.appendChild(note);
+                }
+            }
         });
         
         // 全局變數
