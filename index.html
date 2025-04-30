@@ -872,12 +872,14 @@
             // 頁面切換事件
             startGameButton.addEventListener('click', function() {
                 coverPage.classList.add('page-hidden');
+                // 清除音符生成
+                cleanupMusicNotes();
                 setTimeout(() => {
                     mainContent.classList.remove('page-hidden');
                 }, 400);
             });
             
-            // 動態生成音符函數
+            // 中央向外擴散的音符函數
             function createDynamicMusicNotes() {
                 // 清空容器
                 musicNotesContainer.innerHTML = '';
@@ -885,63 +887,116 @@
                 // 音符符號庫
                 const musicSymbols = ['♩', '♪', '♫', '♬', '𝄞', '𝅘𝅥𝅮', '𝅗𝅥', '𝄐', '𝄑'];
                 
-                // 創建40-60個音符
-                const totalNotes = Math.floor(Math.random() * 21) + 40;
+                // 創建固定數量的初始音符
+                const initialNotes = 6;
                 
-                for (let i = 0; i < totalNotes; i++) {
-                    const note = document.createElement('div');
-                    
-                    // 設置音符樣式類
-                    note.className = 'absolute pointer-events-none';
-                    
+                // 添加中央擴散的動畫樣式 (無旋轉)
+                const centerRadiateStyle = document.createElement('style');
+                centerRadiateStyle.textContent = `
+                    @keyframes centerRadiate {
+                        0% {
+                            transform: translate(-50%, -50%) scale(0.5);
+                            opacity: 0.6;
+                        }
+                        100% {
+                            transform: translate(-50%, -50%) scale(3);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(centerRadiateStyle);
+                
+                // 定時生成新的音符
+                function createNote() {
                     // 選擇隨機音符符號
                     const symbolIndex = Math.floor(Math.random() * musicSymbols.length);
-                    note.textContent = musicSymbols[symbolIndex];
+                    const symbolText = musicSymbols[symbolIndex];
                     
-                    // 隨機大小 (16-40px)
-                    const size = Math.floor(Math.random() * 25) + 16;
-                    note.style.fontSize = `${size}px`;
+                    // 創建音符元素
+                    const note = document.createElement('div');
+                    note.className = 'absolute pointer-events-none origin-center';
+                    note.textContent = symbolText;
                     
-                    // 隨機位置
-                    note.style.left = `${Math.random() * 100}%`;
-                    note.style.top = `${Math.random() * 100}%`;
+                    // 設置初始位置為中央
+                    note.style.left = '50%';
+                    note.style.top = '50%';
                     
-                    // 金色效果，隨機透明度 (0.1-0.4)
-                    const opacity = (Math.random() * 0.3 + 0.1).toFixed(2);
-                    note.style.color = `rgba(212, 175, 55, ${opacity})`;
+                    // 移除旋轉角度設置 (僅保留變數以供其他計算使用)
+                    const rotationAngle = Math.floor(Math.random() * 360);
+                    
+                    // 設置隨機基礎大小 (12-24px)
+                    const baseSize = Math.floor(Math.random() * 13) + 12;
+                    note.style.fontSize = `${baseSize}px`;
+                    
+                    // 金色效果
+                    note.style.color = 'rgba(212, 175, 55, 0.6)';
                     note.style.textShadow = '0 0 8px rgba(212, 175, 55, 0.3)';
                     
-                    // 添加漂浮動畫
-                    const duration = Math.floor(Math.random() * 60) + 30; // 30-90秒
-                    const delay = Math.floor(Math.random() * 20); // 0-20秒
-                    const distance = Math.floor(Math.random() * 30) + 10; // 10-40px
+                    // 計算擴散方向 (0-360度)
+                    const angle = Math.random() * 360;
                     
-                    // 動畫樣式
-                    note.style.transition = 'transform 0.5s ease';
-                    note.style.animation = `floatNote ${duration}s ease-in-out ${delay}s infinite`;
+                    // 計算擴散距離 (螢幕寬度的50-150%)
+                    const distance = 50 + Math.random() * 100;
                     
-                    // 為每個音符創建唯一的動畫名稱
-                    const animationName = `floatNote_${i}`;
+                    // 計算最終位置偏移量
+                    const finalX = Math.cos(angle * Math.PI / 180) * distance;
+                    const finalY = Math.sin(angle * Math.PI / 180) * distance;
                     
-                    // 添加特殊的移動動畫
+                    // 添加擴散動畫 (無旋轉)
+                    const animationName = `centerRadiate_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                     const keyframes = `
                     @keyframes ${animationName} {
-                        0%, 100% { transform: translate(0, 0) rotate(0deg); }
-                        25% { transform: translate(${Math.random() * 20 - 10}px, -${distance}px) rotate(${Math.random() * 10 - 5}deg); }
-                        50% { transform: translate(${Math.random() * 40 - 20}px, -${distance * 1.5}px) rotate(${Math.random() * 20 - 10}deg); }
-                        75% { transform: translate(${Math.random() * 20 - 10}px, -${distance}px) rotate(${Math.random() * 10 - 5}deg); }
+                        0% {
+                            transform: translate(-50%, -50%) scale(0.7);
+                            opacity: 0.8;
+                        }
+                        100% {
+                            transform: translate(calc(-50% + ${finalX}vw), calc(-50% + ${finalY}vh)) scale(2.5);
+                            opacity: 0;
+                        }
                     }`;
                     
-                    // 添加動畫樣式
                     const style = document.createElement('style');
                     style.textContent = keyframes;
                     document.head.appendChild(style);
                     
-                    // 使用唯一的動畫名稱
-                    note.style.animation = `${animationName} ${duration}s ease-in-out ${delay}s infinite`;
+                    // 設置動畫持續時間 (8-15秒)
+                    const duration = 8 + Math.random() * 7;
+                    note.style.animation = `${animationName} ${duration}s cubic-bezier(0.1, 0.2, 0.3, 1) forwards`;
                     
                     // 添加至容器
                     musicNotesContainer.appendChild(note);
+                    
+                    // 設置動畫結束後移除元素
+                    setTimeout(() => {
+                        note.remove();
+                        style.remove();
+                    }, duration * 1000 + 100);
+                }
+                
+                // 初始創建幾個音符
+                for (let i = 0; i < initialNotes; i++) {
+                    setTimeout(() => createNote(), i * 300);
+                }
+                
+                // 設置定時器，每隔一段時間生成新的音符
+                const noteInterval = setInterval(() => {
+                    if (!document.contains(musicNotesContainer)) {
+                        clearInterval(noteInterval);
+                        return;
+                    }
+                    createNote();
+                }, 2000); // 每2秒生成一個新音符
+                
+                // 存儲間隔定時器ID，以便在頁面切換時清除
+                musicNotesContainer.dataset.intervalId = noteInterval;
+            }
+            
+            // 頁面切換時清除音符生成定時器
+            function cleanupMusicNotes() {
+                const musicNotesContainer = document.getElementById('music-notes-container');
+                if (musicNotesContainer && musicNotesContainer.dataset.intervalId) {
+                    clearInterval(parseInt(musicNotesContainer.dataset.intervalId));
                 }
             }
         });
