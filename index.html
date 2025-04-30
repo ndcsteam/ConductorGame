@@ -120,14 +120,18 @@
 
         <!-- 遊戲狀態視窗 -->
         <div id="game-container" class="relative mb-8 p-6 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-md card">
-            <!-- 連接區塊 -->
-            <div id="connection-panel" class="mb-6">
-                <h2 class="text-xl font-semibold mb-4">連接您的指揮棒</h2>
-                <p class="mb-4">連接 Micro:bit 接收器以開始遊戲（已設置接收頻道 250）</p>
-                <button id="connect-button" class="bg-primary hover:bg-opacity-80 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition">
-                    連接 Micro:bit
-                </button>
-                <div id="connection-status" class="mt-4 text-sm font-medium">未連接</div>
+            <!-- 標題與連接按鈕區域 -->
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 class="text-xl font-semibold mb-2">歡迎使用指揮家遊戲</h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">選擇音樂並開始您的指揮之旅</p>
+                </div>
+                <div id="connection-panel" class="text-right">
+                    <button id="connect-button" class="bg-primary hover:bg-opacity-80 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition">
+                        連接 Micro:bit
+                    </button>
+                    <div id="connection-status" class="mt-2 text-sm font-medium">未連接</div>
+                </div>
             </div>
 
             <!-- 遊戲準備區塊 -->
@@ -202,6 +206,12 @@
                     </div>
                 </div>
 
+                <!-- 練習模式提示 -->
+                <div id="practice-mode-banner" class="hidden mb-6 py-3 px-4 rounded-lg bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-center">
+                    <div class="text-lg font-semibold mb-1">練習模式 <span id="practice-countdown">10</span> 秒</div>
+                    <div class="text-sm">請跟著音樂節奏打拍子，學習掌握正確的 BPM，此階段不計分</div>
+                </div>
+
                 <!-- 精準度 -->
                 <div class="mb-6">
                     <div class="text-sm font-medium mb-1">精準度：<span id="accuracy-percent">0%</span></div>
@@ -269,19 +279,7 @@
             <audio id="game-audio" class="hidden"></audio>
         </div>
 
-        <div class="text-sm text-gray-600 dark:text-gray-400 mt-8">
-            <h3 class="font-semibold mb-2">遊戲說明：</h3>
-            <ol class="list-decimal pl-5 space-y-1">
-                <li>將接收 Micro:bit 透過 USB 連接至此裝置</li>
-                <li>將發送 Micro:bit 當作您的指揮棒</li>
-                <li>選擇音樂曲目並開始遊戲</li>
-                <li>聆聽音樂，使用指揮棒打拍子，嘗試達到目標 BPM</li>
-                <li>精準度越高，得分越高！</li>
-            </ol>
-            <p class="mt-2">
-                <span class="font-semibold">提示：</span> 指揮棒需明顯加速才能被系統檢測到。每次指揮動作應為明確的下揮動作。
-            </p>
-        </div>
+
     </div>
 
     <script>
@@ -352,6 +350,9 @@
         let currentMusic = null;
         let targetBpm = 0;
         let gameTimer = null;
+        let isPracticeMode = true; // 初始為練習模式
+        let practiceEndTime = 0; // 練習模式結束時間
+        const PRACTICE_DURATION = 10; // 練習模式持續10秒
         let gameData = {
             totalBeats: 0,
             accurateBeats: 0, // BPM差異 < 5 的準確節拍
@@ -522,6 +523,9 @@
                 bpmReadings: []
             };
             
+            // 重置練習模式
+            isPracticeMode = true;
+            
             // 設置音頻並播放
             gameAudio.src = currentMusic.url;
             gameAudio.onloadedmetadata = () => {
@@ -529,6 +533,12 @@
                 connectionPanel.classList.add('hidden');
                 setupPanel.classList.add('hidden');
                 gamePanel.classList.remove('hidden');
+                
+                // 顯示練習模式橫幅
+                const practiceBanner = document.getElementById('practice-mode-banner');
+                const practiceCountdown = document.getElementById('practice-countdown');
+                practiceBanner.classList.remove('hidden');
+                practiceCountdown.textContent = PRACTICE_DURATION;
                 
                 // 設置目標 BPM 顯示
                 targetBpmDisplay.textContent = targetBpm;
@@ -550,6 +560,9 @@
                 gameStartTime = performance.now();
                 gameAudio.play();
                 
+                // 設置練習結束時間
+                practiceEndTime = gameAudio.currentTime + PRACTICE_DURATION;
+                
                 // 設置遊戲計時器
                 const duration = gameAudio.duration;
                 updateTimeDisplay(0, duration);
@@ -561,6 +574,34 @@
                     
                     updateProgressBar(currentTime / duration * 100);
                     updateTimeDisplay(currentTime, duration);
+                    
+                    // 更新練習模式倒計時
+                    if (isPracticeMode) {
+                        const practiceTimeLeft = Math.max(0, Math.ceil(practiceEndTime - currentTime));
+                        practiceCountdown.textContent = practiceTimeLeft;
+                        
+                        // 練習時間結束
+                        if (practiceTimeLeft === 0) {
+                            isPracticeMode = false;
+                            
+                            // 隱藏練習模式提示，顯示轉場動畫和提示
+                            practiceBanner.classList.add('hidden');
+                            
+                            // 重置計分數據，開始正式計分
+                            gameData = {
+                                totalBeats: 0,
+                                accurateBeats: 0,
+                                bpmReadings: []
+                            };
+                            
+                            // 顯示開始計分提示
+                            showAccuracyFeedback('開始正式計分！', 'text-success');
+                            
+                            // 重置精準度顯示
+                            accuracyBar.style.width = '0%';
+                            accuracyPercent.textContent = '0%';
+                        }
+                    }
                     
                     // 檢查遊戲是否結束
                     if (currentTime >= duration) {
@@ -618,13 +659,15 @@
                     // 使用平均值計算 BPM
                     newBpm = calculateAverageBPM();
                     
-                    // 更新遊戲數據
-                    gameData.totalBeats++;
-                    gameData.bpmReadings.push(newBpm);
+                    // 更新當前 BPM 顯示
+                    currentBpmDisplay.textContent = newBpm;
+                    currentBpmDisplay.classList.add('beat');
+                    setTimeout(() => {
+                        currentBpmDisplay.classList.remove('beat');
+                    }, 500);
                     
                     // 計算與目標 BPM 的差異
                     const bpmDiff = newBpm - targetBpm;
-                    const diffPercent = Math.min(Math.abs(bpmDiff) / targetBpm, 1);
                     
                     // 更新 BPM 差異顯示
                     if (bpmDiff > 0) {
@@ -640,27 +683,36 @@
                     const indicatorPos = Math.max(0, Math.min(100, 50 + (bpmDiff / targetBpm * 50)));
                     bpmIndicator.style.left = `${indicatorPos}%`;
                     
-                    // 更新精準度
-                    if (Math.abs(bpmDiff) <= 5) {
-                        gameData.accurateBeats++;
-                        showAccuracyFeedback('精準！', 'text-success');
-                    } else if (Math.abs(bpmDiff) <= 10) {
-                        showAccuracyFeedback('不錯', 'text-warning');
+                    // 只有在非練習模式下才更新計分
+                    if (!isPracticeMode) {
+                        // 更新遊戲數據
+                        gameData.totalBeats++;
+                        gameData.bpmReadings.push(newBpm);
+                        
+                        // 更新精準度
+                        if (Math.abs(bpmDiff) <= 5) {
+                            gameData.accurateBeats++;
+                            showAccuracyFeedback('精準！', 'text-success');
+                        } else if (Math.abs(bpmDiff) <= 10) {
+                            showAccuracyFeedback('不錯', 'text-warning');
+                        } else {
+                            showAccuracyFeedback('調整節奏', 'text-danger');
+                        }
+                        
+                        // 計算並更新精準度百分比
+                        const accuracy = (gameData.accurateBeats / gameData.totalBeats * 100).toFixed(0);
+                        accuracyBar.style.width = `${accuracy}%`;
+                        accuracyPercent.textContent = `${accuracy}%`;
                     } else {
-                        showAccuracyFeedback('調整節奏', 'text-danger');
+                        // 練習模式下的反饋
+                        if (Math.abs(bpmDiff) <= 5) {
+                            showAccuracyFeedback('節奏不錯！練習中...', 'text-info');
+                        } else if (Math.abs(bpmDiff) <= 10) {
+                            showAccuracyFeedback('繼續調整，接近了！', 'text-info');
+                        } else {
+                            showAccuracyFeedback('嘗試調整節奏...', 'text-info');
+                        }
                     }
-                    
-                    // 計算並更新精準度百分比
-                    const accuracy = (gameData.accurateBeats / gameData.totalBeats * 100).toFixed(0);
-                    accuracyBar.style.width = `${accuracy}%`;
-                    accuracyPercent.textContent = `${accuracy}%`;
-                    
-                    // 更新當前 BPM 顯示
-                    currentBpmDisplay.textContent = newBpm;
-                    currentBpmDisplay.classList.add('beat');
-                    setTimeout(() => {
-                        currentBpmDisplay.classList.remove('beat');
-                    }, 500);
                 }
             }
             
