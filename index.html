@@ -3,268 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Micro:bit 準星控制器</title>
+    <title>指揮家遊戲：節拍大師</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-    tailwind.config = {
-        darkMode: 'class',
-        theme: {
-            extend: {
-                colors: {
-                    primary: '#5D5CDE',
-                },
-            },
-        },
-    }
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                        success: '#4CAF50',
+                        warning: '#FF9800',
+                        danger: '#F44336',
+                    },
+                    animation: {
+                        'conductor': 'conductor 1s ease-in-out infinite',
+                        'pulse-slow': 'pulse 2s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        conductor: {
+                            '0%, 100%': { transform: 'rotate(-5deg)' },
+                            '50%': { transform: 'rotate(15deg)' },
+                        },
+                    }
+                }
+            }
+        }
     </script>
     <style>
-        .gameplay-area {
-            position: relative;
-            overflow: hidden;
-            background-image: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 100%);
-            border: 2px solid #444;
+        .dark {
+            --bg-main: #181818;
+            --text-main: #f3f4f6;
+            --bg-card: #2d2d2d;
         }
         
-        .crosshair {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            margin-left: -20px;
-            margin-top: -20px;
-            pointer-events: none;
-            transition: transform 0.1s ease-out;
+        .light {
+            --bg-main: #ffffff;
+            --text-main: #1f2937;
+            --bg-card: #f9f9f9;
         }
         
-        .crosshair::before, .crosshair::after {
-            content: "";
-            position: absolute;
-            background-color: red;
-        }
-        
-        .crosshair::before {
-            width: 2px;
-            height: 40px;
-            left: 19px;
-            top: 0;
-        }
-        
-        .crosshair::after {
-            width: 40px;
-            height: 2px;
-            left: 0;
-            top: 19px;
-        }
-        
-        .crosshair-center {
-            position: absolute;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background-color: red;
-            left: 17px;
-            top: 17px;
-        }
-        
-        .target {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            margin-left: -15px;
-            margin-top: -15px;
-            border-radius: 50%;
-            border: 2px solid #ffcc00;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .target::after {
-            content: "";
-            width: 10px;
-            height: 10px;
-            background-color: #ffcc00;
-            border-radius: 50%;
-        }
-        
-        .target.hit {
-            border-color: #00cc00;
-            animation: pulse 0.5s infinite alternate;
-        }
-        
-        .target.hit::after {
-            background-color: #00cc00;
-        }
-        
-        @keyframes pulse {
-            from { transform: scale(1); }
-            to { transform: scale(1.1); }
-        }
-        
-        .dark .gameplay-area {
-            background-image: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(255,255,255,0.1) 100%);
-            border-color: #666;
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        .control-panel {
-            background-color: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(5px);
+        .card {
+            background-color: var(--bg-card);
+        }
+
+        .pulse {
+            animation: pulse 0.8s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
         
-        .dark .control-panel {
-            background-color: rgba(0, 0, 0, 0.7);
+        .beat {
+            animation: beat 0.5s ease-in-out;
         }
         
-        .sensitivity-slider::-webkit-slider-thumb {
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #5D5CDE;
-            cursor: pointer;
+        @keyframes beat {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* 給指揮棒製作動畫 */
+        .conductor-wand {
+            transform-origin: bottom center;
+        }
+
+        .conducting {
+            animation: conducting 0.5s ease-in-out;
+        }
+
+        @keyframes conducting {
+            0% { transform: rotate(-10deg); }
+            50% { transform: rotate(30deg); }
+            100% { transform: rotate(-10deg); }
+        }
+
+        /* 進度條動畫 */
+        @keyframes progress {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        .progress-animate {
+            animation: progress linear forwards;
+        }
+
+        /* BPM 差異指示器 */
+        .bpm-indicator {
+            transition: left 0.3s ease-out;
+        }
+
+        /* 精度等級顯示 */
+        .accuracy-text {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        
+        .accuracy-text.show {
+            opacity: 1;
+            transform: translateY(0);
         }
     </style>
 </head>
-<body class="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-bold mb-6 text-center text-primary">Micro:bit 準星控制器</h1>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="md:col-span-2">
-                <div id="gameplayArea" class="gameplay-area bg-gray-100 dark:bg-gray-800 rounded-lg shadow-lg h-[60vh] md:h-[70vh]">
-                    <div id="crosshair" class="crosshair">
-                        <div class="crosshair-center"></div>
-                    </div>
-                    <div id="target" class="target"></div>
-                </div>
-                
-                <div class="mt-4 grid grid-cols-2 gap-4">
-                    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-md">
-                        <h3 class="font-semibold mb-2">控制方式</h3>
-                        <p class="text-sm">傾斜 micro:bit 來移動準星。靠近目標時會變綠色。</p>
-                        <div class="mt-2">
-                            <button id="spawnTargetBtn" class="bg-primary hover:bg-opacity-90 text-white py-1 px-4 rounded">
-                                重置目標
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 shadow-md">
-                        <h3 class="font-semibold mb-2">命中計數</h3>
-                        <div class="flex justify-between items-center">
-                            <span>目標: <span id="targetCount">0</span></span>
-                            <span>命中: <span id="hitCount">0</span></span>
-                        </div>
-                        <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                            停留在目標上超過1秒視為命中
-                        </div>
-                    </div>
-                </div>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <h1 class="text-3xl font-bold mb-6 text-center">指揮家遊戲：節拍大師</h1>
+
+        <!-- 遊戲狀態視窗 -->
+        <div id="game-container" class="relative mb-8 p-6 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-md card">
+            <!-- 連接區塊 -->
+            <div id="connection-panel" class="mb-6">
+                <h2 class="text-xl font-semibold mb-4">連接您的指揮棒</h2>
+                <p class="mb-4">連接 Micro:bit 接收器以開始遊戲（已設置接收頻道 250）</p>
+                <button id="connect-button" class="bg-primary hover:bg-opacity-80 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition">
+                    連接 Micro:bit
+                </button>
+                <div id="connection-status" class="mt-4 text-sm font-medium">未連接</div>
             </div>
-            
-            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 shadow-md">
-                <h2 class="text-xl font-semibold mb-4">連接與設定</h2>
-                
-                <div class="mb-4">
-                    <button id="connectBtn" class="w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-md transition">
-                        連接 Micro:bit
+
+            <!-- 遊戲準備區塊 -->
+            <div id="setup-panel" class="hidden mb-6 pb-6 border-b border-gray-300 dark:border-gray-700">
+                <h2 class="text-xl font-semibold mb-4">選擇曲目</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <select id="music-select" class="w-full py-2 px-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 rounded text-base focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option value="game_start">遊戲開始音樂</option>
+                        <option value="waltz">華爾滋舞曲 - 藍色多瑙河（目標 BPM: 60）</option>
+                        <option value="march">進行曲 - 拉德斯基進行曲（目標 BPM: 108）</option>
+                        <option value="symphony">交響曲 - 貝多芬第五交響曲（目標 BPM: 88）</option>
+                    </select>
+                    <div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                        BPM計算: 平均值計算，信號節流: 420ms
+                    </div>
+                    <button id="start-game-button" class="bg-success hover:bg-opacity-80 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-success focus:ring-opacity-50 transition">
+                        開始遊戲
                     </button>
                 </div>
-                
-                <div id="statusContainer" class="mb-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-md">
-                    <p id="statusText">尚未連接</p>
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                    遊戲說明：聆聽音樂，使用您的 Micro:bit 指揮棒打拍子，嘗試保持音樂的節奏！
                 </div>
-                
-                <div class="space-y-4">
-                    <div>
-                        <label for="sensitivityX" class="block mb-1 font-medium">X軸靈敏度:</label>
-                        <input type="range" id="sensitivityX" min="1" max="10" value="5" class="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-md appearance-none sensitivity-slider">
-                        <div class="flex justify-between text-xs mt-1">
-                            <span>低</span>
-                            <span>高</span>
+            </div>
+
+            <!-- 遊戲進行區塊 -->
+            <div id="game-panel" class="hidden">
+                <!-- 指揮動畫 -->
+                <div class="flex justify-center items-center mb-6">
+                    <div id="conductor-animation" class="relative h-48 w-48 flex justify-center items-center">
+                        <!-- 指揮家圖示 -->
+                        <div class="absolute bottom-0 w-full flex justify-center">
+                            <div class="relative w-20 h-20 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
+                                <div class="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-800 dark:text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                </div>
+                                <!-- 指揮棒 -->
+                                <div id="conductor-wand" class="conductor-wand absolute h-24 w-2 bg-gray-800 dark:bg-gray-200 rounded-full" style="bottom: 50%; transform: rotate(-10deg);">
+                                    <div class="absolute top-0 left-0 right-0 h-4 rounded-full bg-white dark:bg-gray-300"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div>
-                        <label for="sensitivityY" class="block mb-1 font-medium">Y軸靈敏度:</label>
-                        <input type="range" id="sensitivityY" min="1" max="10" value="5" class="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-md appearance-none sensitivity-slider">
-                        <div class="flex justify-between text-xs mt-1">
-                            <span>低</span>
-                            <span>高</span>
+                </div>
+
+                <!-- 遊戲狀態信息 -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="p-4 rounded-lg bg-white dark:bg-gray-900 shadow text-center">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">當前 BPM</div>
+                        <div id="current-bpm" class="text-3xl font-bold text-primary">--</div>
+                    </div>
+                    <div class="p-4 rounded-lg bg-white dark:bg-gray-900 shadow text-center">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">目標 BPM</div>
+                        <div id="target-bpm" class="text-3xl font-bold text-success">--</div>
+                    </div>
+                </div>
+
+                <!-- BPM 差異指示器 -->
+                <div class="mb-6">
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">BPM 差異：<span id="bpm-diff">--</span></div>
+                    <div class="relative h-8 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="w-px h-full bg-gray-500 dark:bg-gray-400"></div>
+                        </div>
+                        <div id="bpm-indicator" class="bpm-indicator absolute top-0 bottom-0 w-6 h-6 bg-primary rounded-full transform -translate-x-1/2" style="left: 50%;"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <span>太慢</span>
+                        <span>精準</span>
+                        <span>太快</span>
+                    </div>
+                </div>
+
+                <!-- 精準度 -->
+                <div class="mb-6">
+                    <div class="text-sm font-medium mb-1">精準度：<span id="accuracy-percent">0%</span></div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
+                        <div id="accuracy-bar" class="bg-primary h-2.5 rounded-full w-0 transition-all duration-300"></div>
+                    </div>
+                    <div id="accuracy-text" class="accuracy-text text-center py-2 font-medium text-lg transition-colors"></div>
+                </div>
+
+                <!-- 進度條 -->
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-1">
+                        <div>進度</div>
+                        <div id="time-display">00:00 / 00:00</div>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                        <div id="progress-bar" class="bg-primary h-2.5 rounded-full w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+
+                <!-- 控制按鈕 -->
+                <div class="flex justify-center mt-6">
+                    <button id="stop-game-button" class="bg-danger hover:bg-opacity-80 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-danger focus:ring-opacity-50 transition">
+                        結束遊戲
+                    </button>
+                </div>
+            </div>
+
+            <!-- 遊戲結果區塊 -->
+            <div id="result-panel" class="hidden">
+                <h2 class="text-xl font-semibold mb-4 text-center">遊戲結果</h2>
+                <div class="p-6 rounded-lg bg-white dark:bg-gray-900 shadow-md text-center mb-6">
+                    <div id="result-title" class="text-2xl font-bold mb-4">精準指揮家！</div>
+                    <div id="result-score" class="text-4xl font-bold text-primary mb-6">96%</div>
+                    <div id="result-details" class="grid grid-cols-2 gap-4 mb-6 max-w-sm mx-auto">
+                        <div class="text-left">
+                            <div class="text-sm text-gray-500 dark:text-gray-400">目標 BPM</div>
+                            <div id="result-target-bpm" class="text-lg font-medium">60</div>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-sm text-gray-500 dark:text-gray-400">平均 BPM</div>
+                            <div id="result-average-bpm" class="text-lg font-medium">62</div>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-sm text-gray-500 dark:text-gray-400">精準節拍次數</div>
+                            <div id="result-accurate-beats" class="text-lg font-medium">45</div>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-sm text-gray-500 dark:text-gray-400">總節拍次數</div>
+                            <div id="result-total-beats" class="text-lg font-medium">48</div>
                         </div>
                     </div>
-                    
-                    <div>
-                        <label for="deadzone" class="block mb-1 font-medium">死區大小:</label>
-                        <input type="range" id="deadzone" min="0" max="500" value="100" class="w-full h-2 bg-gray-300 dark:bg-gray-600 rounded-md appearance-none sensitivity-slider">
-                        <div class="flex justify-between text-xs mt-1">
-                            <span>小</span>
-                            <span>大</span>
-                        </div>
+                    <div id="result-comment" class="text-gray-600 dark:text-gray-400 mb-6">
+                        您展現了出色的指揮技巧，持續保持穩定的節奏！
                     </div>
-                    
-                    <div>
-                        <button id="calibrateBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-md transition disabled:opacity-50">
-                            校準水平位置
+                    <div class="flex justify-center">
+                        <button id="play-again-button" class="bg-primary hover:bg-opacity-80 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition">
+                            再玩一次
                         </button>
                     </div>
                 </div>
-                
-                <div class="mt-6">
-                    <h3 class="font-semibold mb-2">座標數據</h3>
-                    <div class="grid grid-cols-3 gap-2 text-center">
-                        <div class="bg-gray-200 dark:bg-gray-700 rounded p-2">
-                            <div class="text-red-500 font-bold">X</div>
-                            <div id="xValue" class="font-mono">0</div>
-                        </div>
-                        <div class="bg-gray-200 dark:bg-gray-700 rounded p-2">
-                            <div class="text-green-500 font-bold">Y</div>
-                            <div id="yValue" class="font-mono">0</div>
-                        </div>
-                        <div class="bg-gray-200 dark:bg-gray-700 rounded p-2">
-                            <div class="text-blue-500 font-bold">Z</div>
-                            <div id="zValue" class="font-mono">0</div>
-                        </div>
-                    </div>
-                </div>
             </div>
+
+            <!-- 音樂播放器（隱藏） -->
+            <audio id="game-audio" class="hidden"></audio>
         </div>
-        
-        <div class="mt-6 bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg text-yellow-800 dark:text-yellow-200">
-            <h3 class="font-bold text-lg mb-2">Micro:bit 設定指南</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <h4 class="font-semibold mb-1">發送端 Micro:bit:</h4>
-                    <div class="mt-2 p-2 bg-white dark:bg-gray-950 rounded text-xs font-mono overflow-auto">
-                        radio.setGroup(1)<br>
-                        basic.showIcon(IconNames.Happy)<br>
-                        basic.forever(function() {<br>
-                        &nbsp;&nbsp;let x = input.acceleration(Dimension.X)<br>
-                        &nbsp;&nbsp;let y = input.acceleration(Dimension.Y)<br>
-                        &nbsp;&nbsp;let z = input.acceleration(Dimension.Z)<br>
-                        &nbsp;&nbsp;let data = "X:" + x + ",Y:" + y + ",Z:" + z<br>
-                        &nbsp;&nbsp;radio.sendString(data)<br>
-                        &nbsp;&nbsp;led.toggle(0, 0) // 視覺回饋<br>
-                        &nbsp;&nbsp;basic.pause(20) // 更高頻率更新<br>
-                        })
-                    </div>
-                </div>
-                <div>
-                    <h4 class="font-semibold mb-1">接收端 Micro:bit:</h4>
-                    <div class="mt-2 p-2 bg-white dark:bg-gray-950 rounded text-xs font-mono overflow-auto">
-                        radio.setGroup(1)<br>
-                        basic.showIcon(IconNames.Target)<br>
-                        radio.onReceivedString(function(data) {<br>
-                        &nbsp;&nbsp;serial.writeLine(data)<br>
-                        &nbsp;&nbsp;led.toggle(4, 0)<br>
-                        })
-                    </div>
-                </div>
-            </div>
+
+        <div class="text-sm text-gray-600 dark:text-gray-400 mt-8">
+            <h3 class="font-semibold mb-2">遊戲說明：</h3>
+            <ol class="list-decimal pl-5 space-y-1">
+                <li>將接收 Micro:bit 透過 USB 連接至此裝置</li>
+                <li>將發送 Micro:bit 當作您的指揮棒</li>
+                <li>選擇音樂曲目並開始遊戲</li>
+                <li>聆聽音樂，使用指揮棒打拍子，嘗試達到目標 BPM</li>
+                <li>精準度越高，得分越高！</li>
+            </ol>
+            <p class="mt-2">
+                <span class="font-semibold">提示：</span> 指揮棒需明顯加速才能被系統檢測到。每次指揮動作應為明確的下揮動作。
+            </p>
         </div>
     </div>
 
     <script>
-        // 檢測暗色模式
+        // 檢測深色模式偏好
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.classList.add('dark');
         }
@@ -276,381 +297,482 @@
             }
         });
 
-        // 全域變數
-        let port = null;
-        let reader = null;
-        let readLoop = false;
-        let lastDataTime = 0;
-        
-        // 校準與控制相關
-        let calibrationX = 0;
-        let calibrationY = 0;
-        let calibrationZ = 0;
-        let isCalibrated = false;
-        
-        // 遊戲相關
-        let targetCount = 0;
-        let hitCount = 0;
-        let isHitting = false;
-        let hitTimer = null;
-        
-        // DOM 元素
-        const connectBtn = document.getElementById('connectBtn');
-        const statusText = document.getElementById('statusText');
-        const xValue = document.getElementById('xValue');
-        const yValue = document.getElementById('yValue');
-        const zValue = document.getElementById('zValue');
-        const crosshair = document.getElementById('crosshair');
-        const target = document.getElementById('target');
-        const gameplayArea = document.getElementById('gameplayArea');
-        const calibrateBtn = document.getElementById('calibrateBtn');
-        const sensitivityX = document.getElementById('sensitivityX');
-        const sensitivityY = document.getElementById('sensitivityY');
-        const deadzone = document.getElementById('deadzone');
-        const spawnTargetBtn = document.getElementById('spawnTargetBtn');
-        const targetCountEl = document.getElementById('targetCount');
-        const hitCountEl = document.getElementById('hitCount');
-
-        // 連接到 Micro:bit
-        connectBtn.addEventListener('click', async () => {
-            if (port) {
-                await disconnectFromDevice();
-                return;
+        // 音樂資源設定
+        const MUSIC_RESOURCES = {
+            game_start: {
+                url: 'https://cdn.jsdelivr.net/gh/iGitScor/Music-samples/wav/bubbles.wav',
+                duration: 10,
+                bpm: 0, // 非遊戲音樂
+                title: '遊戲開始音樂'
+            },
+            waltz: {
+                url: './audio/TheBlueDanube.mp3',
+                duration: 30,
+                bpm: 60,
+                title: '華爾滋舞曲 - 藍色多瑙河',
+                comment: '穩定的三拍子節奏，慢速優雅的舞曲風格'
+            },
+            march: {
+                url: 'https://cdn.jsdelivr.net/gh/iGitScor/Music-samples/wav/littleidea.wav',
+                duration: 30,
+                bpm: 108,
+                title: '進行曲 - 拉德斯基進行曲',
+                comment: '活力充沛的二拍子節奏，適合行進和頒獎典禮'
+            },
+            symphony: {
+                url: 'https://cdn.jsdelivr.net/gh/iGitScor/Music-samples/wav/ukulele.wav',
+                duration: 30,
+                bpm: 88,
+                title: '交響曲 - 貝多芬第五交響曲',
+                comment: '雄偉的四拍子節奏，著名的"命運之門"動機'
             }
+        };
 
+        // 全局變數
+        let port;
+        let reader;
+        let reading = false;
+        let textDecoder = new TextDecoder();
+        let accelerationCount = 0;
+        
+        // BPM 計算相關變數
+        let timestamps = [];
+        let lastTimestamp = 0;
+        let bpm = 0;
+        let lastInterval = 0;
+        
+        // 信號節流變數
+        let lastSignalTime = 0;
+        const throttleTime = 420; // 固定為 420 毫秒
+        let isProcessing = false;
+        
+        // 遊戲相關變數
+        let gameActive = false;
+        let gameStartTime = 0;
+        let currentMusic = null;
+        let targetBpm = 0;
+        let gameTimer = null;
+        let gameData = {
+            totalBeats: 0,
+            accurateBeats: 0, // BPM差異 < 5 的準確節拍
+            bpmReadings: []
+        };
+        let accuracyTimeoutId = null;
+
+        // DOM 元素
+        const connectButton = document.getElementById('connect-button');
+        const connectionStatus = document.getElementById('connection-status');
+        const connectionPanel = document.getElementById('connection-panel');
+        const setupPanel = document.getElementById('setup-panel');
+        const gamePanel = document.getElementById('game-panel');
+        const resultPanel = document.getElementById('result-panel');
+        const musicSelect = document.getElementById('music-select');
+        const startGameButton = document.getElementById('start-game-button');
+        const stopGameButton = document.getElementById('stop-game-button');
+        const playAgainButton = document.getElementById('play-again-button');
+        const gameAudio = document.getElementById('game-audio');
+        const currentBpmDisplay = document.getElementById('current-bpm');
+        const targetBpmDisplay = document.getElementById('target-bpm');
+        const bpmDiffDisplay = document.getElementById('bpm-diff');
+        const bpmIndicator = document.getElementById('bpm-indicator');
+        const accuracyBar = document.getElementById('accuracy-bar');
+        const accuracyPercent = document.getElementById('accuracy-percent');
+        const accuracyText = document.getElementById('accuracy-text');
+        const progressBar = document.getElementById('progress-bar');
+        const timeDisplay = document.getElementById('time-display');
+        const conductorWand = document.getElementById('conductor-wand');
+
+        // 檢查 Web Serial API 支援
+        if (!('serial' in navigator)) {
+            connectionStatus.textContent = '您的瀏覽器不支援 Web Serial API。請使用 Chrome 或 Edge 瀏覽器。';
+            connectionStatus.classList.add('text-red-500');
+            connectButton.disabled = true;
+            connectButton.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        // 連接按鈕點擊事件
+        connectButton.addEventListener('click', async () => {
             try {
-                statusText.textContent = '請選擇接收端 micro:bit 裝置...';
-                
-                // 檢查瀏覽器支援
-                if (!navigator.serial) {
-                    throw new Error('您的瀏覽器不支援 Web Serial API。請使用 Chrome、Edge 或其他支援的瀏覽器。');
-                }
-                
-                // 請求序列埠
+                // 請求 serial port
                 port = await navigator.serial.requestPort();
-                
-                statusText.textContent = '連接中...';
-                
-                // 開啟序列埠 (波特率設為 115200)
                 await port.open({ baudRate: 115200 });
                 
-                // 設置讀取器
-                const decoder = new TextDecoder();
-                reader = port.readable.getReader();
-                readLoop = true;
+                connectionStatus.textContent = '已連接 Micro:bit 指揮棒';
+                connectionStatus.classList.add('text-green-500');
+                connectButton.textContent = '已連接';
+                connectButton.classList.add('bg-green-500');
+                connectButton.disabled = true;
                 
-                statusText.textContent = '已連接 - 等待數據中';
-                connectBtn.textContent = '中斷連接';
-                calibrateBtn.disabled = false;
+                // 顯示設置面板
+                setupPanel.classList.remove('hidden');
                 
                 // 開始讀取數據
-                let buffer = '';
+                readSerialData();
                 
-                while (readLoop) {
+            } catch (error) {
+                console.error('連接錯誤:', error);
+                connectionStatus.textContent = '連接失敗: ' + (error.message || '未知錯誤');
+                connectionStatus.classList.add('text-red-500');
+            }
+        });
+
+        // 開始遊戲按鈕
+        startGameButton.addEventListener('click', startGame);
+        
+        // 停止遊戲按鈕
+        stopGameButton.addEventListener('click', endGame);
+        
+        // 再玩一次按鈕
+        playAgainButton.addEventListener('click', resetGame);
+
+        // 讀取串口數據
+        async function readSerialData() {
+            if (reading) return;
+            
+            reading = true;
+            reader = port.readable.getReader();
+            
+            try {
+                while (true) {
                     const { value, done } = await reader.read();
+                    
                     if (done) {
                         break;
                     }
                     
-                    // 將收到的數據添加到緩衝區
-                    buffer += decoder.decode(value);
-                    
-                    // 處理完整行
-                    let newlineIndex;
-                    while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
-                        const line = buffer.substring(0, newlineIndex).trim();
-                        buffer = buffer.substring(newlineIndex + 1);
-                        
-                        if (line) {
-                            processSerialData(line);
-                        }
-                    }
+                    // 處理接收到的數據
+                    processData(value);
                 }
-                
             } catch (error) {
-                console.error('連接錯誤:', error);
-                statusText.textContent = `錯誤: ${error.message}`;
-                await disconnectFromDevice();
-            }
-        });
-
-        // 處理序列數據
-        function processSerialData(line) {
-            try {
-                // 記錄接收時間
-                const now = new Date();
-                lastDataTime = now.getTime();
+                console.error('讀取錯誤:', error);
+            } finally {
+                reader.releaseLock();
+                reading = false;
                 
-                // 處理數據 - 支援兩種格式:
-                let x = 0, y = 0, z = 0;
-                let dataProcessed = false;
-                
-                // 嘗試解析 JSON 格式 {"x":123,"y":456,"z":789}
-                if (line.trim().startsWith('{') && line.trim().endsWith('}')) {
-                    try {
-                        const data = JSON.parse(line);
-                        if ('x' in data && 'y' in data && 'z' in data) {
-                            x = data.x;
-                            y = data.y;
-                            z = data.z;
-                            dataProcessed = true;
-                        }
-                    } catch (jsonError) {
-                        // 繼續嘗試其他格式
-                    }
-                }
-                
-                // 嘗試解析簡單格式 X:123,Y:456,Z:789
-                if (!dataProcessed && line.includes('X:') && line.includes('Y:') && line.includes('Z:')) {
-                    try {
-                        // 提取 X 值
-                        const xMatch = line.match(/X:(-?\d+)/);
-                        if (xMatch && xMatch[1]) {
-                            x = parseInt(xMatch[1], 10);
-                        }
-                        
-                        // 提取 Y 值
-                        const yMatch = line.match(/Y:(-?\d+)/);
-                        if (yMatch && yMatch[1]) {
-                            y = parseInt(yMatch[1], 10);
-                        }
-                        
-                        // 提取 Z 值
-                        const zMatch = line.match(/Z:(-?\d+)/);
-                        if (zMatch && zMatch[1]) {
-                            z = parseInt(zMatch[1], 10);
-                        }
-                        
-                        dataProcessed = true;
-                    } catch (parseError) {
-                        // 繼續嘗試其他格式
-                    }
-                }
-                
-                // 如果成功處理了數據
-                if (dataProcessed) {
-                    // 更新數據顯示
-                    updateDataDisplay(x, y, z);
-                    
-                    // 更新準星位置
-                    updateCrosshairPosition(x, y, z);
-                    
-                    // 檢查是否命中目標
-                    checkTargetHit();
-                    
-                    statusText.textContent = `接收中 - 上次更新: ${now.toLocaleTimeString()}`;
-                }
-                
-            } catch (e) {
-                console.error('處理數據錯誤:', e);
-            }
-        }
-
-        // 更新數據顯示
-        function updateDataDisplay(x, y, z) {
-            xValue.textContent = x;
-            yValue.textContent = y;
-            zValue.textContent = z;
-        }
-
-        // 更新準星位置
-        function updateCrosshairPosition(x, y, z) {
-            // 如果尚未校準且沒有初始值，先創建一個基準點
-            if (!isCalibrated && calibrationX === 0 && calibrationY === 0) {
-                // 自動設置初始校準值
-                calibrationX = x;
-                calibrationY = y;
-                console.log("自動設置初始校準值:", calibrationX, calibrationY);
-            }
-            
-            // 計算相對於校準位置的偏移
-            let deltaX = x - calibrationX;
-            let deltaY = y - calibrationY;
-            
-            // 套用死區
-            const deadzoneValue = parseInt(deadzone.value);
-            if (Math.abs(deltaX) < deadzoneValue) deltaX = 0;
-            if (Math.abs(deltaY) < deadzoneValue) deltaY = 0;
-            
-            // 套用靈敏度 (增強初始靈敏度)
-            const sensX = parseFloat(sensitivityX.value) / 1.5; // 增強效果
-            const sensY = parseFloat(sensitivityY.value) / 1.5;
-            
-            // 計算準星位置（反轉Y軸方向以匹配直覺）
-            const areaRect = gameplayArea.getBoundingClientRect();
-            const areaWidth = areaRect.width;
-            const areaHeight = areaRect.height;
-            
-            // 將加速度計值映射到畫面座標
-            // 基於 X 軸加速度控制水平位置 (左右傾斜)
-            let posX = (areaWidth / 2) + (deltaX * sensX);
-            posX = Math.max(0, Math.min(areaWidth, posX));
-            
-            // 基於 Y 軸加速度控制垂直位置 (前後傾斜)
-            // 因為 micro:bit 向前傾斜時 Y 值增加，但屏幕 Y 座標向下增加，所以我們反轉方向
-            let posY = (areaHeight / 2) - (deltaY * sensY);
-            posY = Math.max(0, Math.min(areaHeight, posY));
-            
-            // 更新準星位置 (直接設置像素值)
-            crosshair.style.left = posX + 'px';
-            crosshair.style.top = posY + 'px';
-            
-            // 添加調試信息
-            console.log("準星位置更新:", 
-                "deltaX:", deltaX, 
-                "deltaY:", deltaY, 
-                "位置:", posX.toFixed(1), posY.toFixed(1));
-        }
-
-        // 校準按鈕事件
-        calibrateBtn.addEventListener('click', function() {
-            // 獲取當前數值作為校準基準
-            calibrationX = parseInt(xValue.textContent) || 0;
-            calibrationY = parseInt(yValue.textContent) || 0;
-            calibrationZ = parseInt(zValue.textContent) || 0;
-            isCalibrated = true;
-            
-            // 重置準星位置到中心
-            const areaRect = gameplayArea.getBoundingClientRect();
-            crosshair.style.left = `${areaRect.width / 2}px`;
-            crosshair.style.top = `${areaRect.height / 2}px`;
-            
-            statusText.textContent = '已校準 - 當前位置設為中心點';
-            calibrateBtn.textContent = '重新校準';
-            
-            console.log("手動校準完成:", calibrationX, calibrationY, calibrationZ);
-            
-            // 產生一個新目標
-            spawnTarget();
-        });
-
-        // 產生目標
-        function spawnTarget() {
-            const areaRect = gameplayArea.getBoundingClientRect();
-            
-            // 產生隨機位置，但避開邊緣
-            const margin = 50;
-            const randomX = Math.random() * (areaRect.width - 2 * margin) + margin;
-            const randomY = Math.random() * (areaRect.height - 2 * margin) + margin;
-            
-            // 設定目標位置
-            target.style.left = `${randomX}px`;
-            target.style.top = `${randomY}px`;
-            target.classList.remove('hit');
-            
-            // 增加目標計數
-            targetCount++;
-            targetCountEl.textContent = targetCount;
-        }
-
-        // 檢查是否命中目標
-        function checkTargetHit() {
-            // 獲取準星和目標的位置
-            const crosshairRect = crosshair.getBoundingClientRect();
-            const targetRect = target.getBoundingClientRect();
-            
-            // 計算準星和目標的中心點
-            const crosshairCenterX = crosshairRect.left + crosshairRect.width / 2;
-            const crosshairCenterY = crosshairRect.top + crosshairRect.height / 2;
-            const targetCenterX = targetRect.left + targetRect.width / 2;
-            const targetCenterY = targetRect.top + targetRect.height / 2;
-            
-            // 計算距離
-            const distance = Math.sqrt(
-                Math.pow(crosshairCenterX - targetCenterX, 2) + 
-                Math.pow(crosshairCenterY - targetCenterY, 2)
-            );
-            
-            // 如果距離小於目標半徑，表示命中
-            if (distance < targetRect.width) {
-                // 如果尚未處於命中狀態，開始計時
-                if (!isHitting) {
-                    isHitting = true;
-                    target.classList.add('hit');
-                    
-                    // 一秒後計為有效命中
-                    hitTimer = setTimeout(() => {
-                        hitCount++;
-                        hitCountEl.textContent = hitCount;
-                        spawnTarget();
-                    }, 1000);
-                }
-            } else {
-                // 如果離開目標，重置命中狀態
-                if (isHitting) {
-                    isHitting = false;
-                    target.classList.remove('hit');
-                    clearTimeout(hitTimer);
-                }
-            }
-        }
-
-        // 重置目標按鈕
-        spawnTargetBtn.addEventListener('click', function() {
-            spawnTarget();
-        });
-
-        // 中斷裝置連接
-        async function disconnectFromDevice() {
-            if (reader) {
-                readLoop = false;
-                try {
-                    await reader.cancel();
-                    reader.releaseLock();
-                } catch (e) {
-                    console.log('停止讀取時發生錯誤:', e);
-                }
-                reader = null;
-            }
-            
-            if (port) {
-                try {
-                    await port.close();
-                } catch (e) {
-                    console.log('關閉連接時發生錯誤:', e);
-                }
-                port = null;
-            }
-            
-            statusText.textContent = '已中斷連接';
-            connectBtn.textContent = '連接 Micro:bit';
-            calibrateBtn.disabled = true;
-        }
-
-        // 初始化目標位置
-        function initializeGame() {
-            // 設置初始目標位置在中心
-            const areaRect = gameplayArea.getBoundingClientRect();
-            target.style.left = `${areaRect.width / 2}px`;
-            target.style.top = `${areaRect.height / 2}px`;
-            
-            // 設置初始準星位置在中心
-            crosshair.style.left = `${areaRect.width / 2}px`;
-            crosshair.style.top = `${areaRect.height / 2}px`;
-            
-            // 禁用校準按鈕，直到連接
-            calibrateBtn.disabled = true;
-        }
-
-        // 當頁面加載或調整大小時初始化
-        window.addEventListener('load', initializeGame);
-        window.addEventListener('resize', initializeGame);
-
-        // 檢測信號丟失
-        setInterval(() => {
-            if (port && lastDataTime > 0) {
-                const now = new Date().getTime();
-                const timeSinceLastData = now - lastDataTime;
-                
-                // 如果超過3秒未收到數據
-                if (timeSinceLastData > 3000) {
-                    statusText.textContent = `警告: ${Math.floor(timeSinceLastData/1000)}秒未收到數據`;
-                    statusText.classList.add('text-red-500');
+                // 如果連接還存在，則嘗試再次讀取
+                if (port && port.readable) {
+                    setTimeout(readSerialData, 100);
                 } else {
-                    statusText.classList.remove('text-red-500');
+                    connectionStatus.textContent = '連接已斷開';
+                    connectionStatus.classList.remove('text-green-500');
+                    connectionStatus.classList.add('text-red-500');
+                    connectButton.textContent = '重新連接';
+                    connectButton.classList.remove('bg-green-500');
+                    connectButton.disabled = false;
+                    
+                    // 如果遊戲正在進行，則結束遊戲
+                    if (gameActive) {
+                        endGame();
+                    }
                 }
             }
-        }, 1000);
+        }
+
+        // 處理接收到的數據
+        function processData(data) {
+            const text = textDecoder.decode(data).trim();
+            console.log('接收到數據:', text);
+            
+            // 檢查是否接收到 "b" 信號
+            if (text.includes('b')) {
+                // 節流處理 - 忽略節流時間內的連續信號
+                const now = performance.now();
+                if (now - lastSignalTime < throttleTime) {
+                    console.log(`信號節流: 間隔 ${Math.round(now - lastSignalTime)}ms < ${throttleTime}ms, 忽略`);
+                    return;
+                }
+                
+                // 如果正在處理中，也忽略
+                if (isProcessing) {
+                    return;
+                }
+                
+                isProcessing = true;
+                lastSignalTime = now;
+                
+                // 處理加速度檢測
+                if (gameActive) {
+                    conductorBeat();
+                }
+                
+                // 設定短時間後重置處理標誌，以確保信號處理完畢
+                setTimeout(() => {
+                    isProcessing = false;
+                }, 50);
+            }
+        }
+
+        // 開始遊戲
+        function startGame() {
+            const musicKey = musicSelect.value;
+            currentMusic = MUSIC_RESOURCES[musicKey];
+            targetBpm = currentMusic.bpm;
+            
+            // 不是遊戲音樂則返回選擇界面
+            if (targetBpm === 0) {
+                gameAudio.src = currentMusic.url;
+                gameAudio.play();
+                return;
+            }
+            
+            // 重置遊戲數據
+            gameData = {
+                totalBeats: 0,
+                accurateBeats: 0,
+                bpmReadings: []
+            };
+            
+            // 設置音頻並播放
+            gameAudio.src = currentMusic.url;
+            gameAudio.onloadedmetadata = () => {
+                // 更新界面
+                connectionPanel.classList.add('hidden');
+                setupPanel.classList.add('hidden');
+                gamePanel.classList.remove('hidden');
+                
+                // 設置目標 BPM 顯示
+                targetBpmDisplay.textContent = targetBpm;
+                currentBpmDisplay.textContent = '--';
+                bpmDiffDisplay.textContent = '--';
+                
+                // 重置 BPM 指示器
+                bpmIndicator.style.left = '50%';
+                
+                // 重置精準度
+                accuracyBar.style.width = '0%';
+                accuracyPercent.textContent = '0%';
+                
+                // 重置進度條
+                updateProgressBar(0);
+                
+                // 開始遊戲
+                gameActive = true;
+                gameStartTime = performance.now();
+                gameAudio.play();
+                
+                // 設置遊戲計時器
+                const duration = gameAudio.duration;
+                updateTimeDisplay(0, duration);
+                
+                // 設置進度更新定時器
+                gameTimer = setInterval(() => {
+                    const currentTime = gameAudio.currentTime;
+                    const duration = gameAudio.duration;
+                    
+                    updateProgressBar(currentTime / duration * 100);
+                    updateTimeDisplay(currentTime, duration);
+                    
+                    // 檢查遊戲是否結束
+                    if (currentTime >= duration) {
+                        endGame();
+                    }
+                }, 100);
+            };
+        }
+
+        // 計算 BPM - 平均法
+        function calculateAverageBPM() {
+            if (timestamps.length < 2) return 0;
+            
+            // 計算時間間隔（以毫秒為單位）
+            const intervals = [];
+            for (let i = 1; i < timestamps.length; i++) {
+                intervals.push(timestamps[i] - timestamps[i - 1]);
+            }
+            
+            // 計算平均間隔
+            const averageInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
+            
+            // 轉換為 BPM（每分鐘節拍數）
+            return Math.round(60000 / averageInterval);
+        }
+        
+        // 指揮動作
+        function conductorBeat() {
+            accelerationCount++;
+            const now = performance.now();
+            
+            // 添加指揮棒動畫
+            conductorWand.classList.add('conducting');
+            setTimeout(() => {
+                conductorWand.classList.remove('conducting');
+            }, 400);
+            
+            // 記錄時間戳以計算平均 BPM
+            timestamps.push(now);
+            
+            // 保持固定數量的樣本 (最近5個)
+            if (timestamps.length > 5) {
+                timestamps.shift();
+            }
+            
+            let newBpm = 0;
+            let interval = 0;
+            
+            if (lastTimestamp) {
+                interval = now - lastTimestamp;
+                lastInterval = interval;
+                
+                // 只有在合理範圍內的間隔才計算 BPM（300-2000ms 大致對應 30-200 BPM）
+                if (interval >= 300 && interval <= 2000) {
+                    // 使用平均值計算 BPM
+                    newBpm = calculateAverageBPM();
+                    
+                    // 更新遊戲數據
+                    gameData.totalBeats++;
+                    gameData.bpmReadings.push(newBpm);
+                    
+                    // 計算與目標 BPM 的差異
+                    const bpmDiff = newBpm - targetBpm;
+                    const diffPercent = Math.min(Math.abs(bpmDiff) / targetBpm, 1);
+                    
+                    // 更新 BPM 差異顯示
+                    if (bpmDiff > 0) {
+                        bpmDiffDisplay.textContent = `+${bpmDiff} (太快)`;
+                    } else if (bpmDiff < 0) {
+                        bpmDiffDisplay.textContent = `${bpmDiff} (太慢)`;
+                    } else {
+                        bpmDiffDisplay.textContent = `精準!`;
+                    }
+                    
+                    // 更新 BPM 指示器位置
+                    // 從 0% (太慢) 到 100% (太快)，50% 是精準
+                    const indicatorPos = Math.max(0, Math.min(100, 50 + (bpmDiff / targetBpm * 50)));
+                    bpmIndicator.style.left = `${indicatorPos}%`;
+                    
+                    // 更新精準度
+                    if (Math.abs(bpmDiff) <= 5) {
+                        gameData.accurateBeats++;
+                        showAccuracyFeedback('精準！', 'text-success');
+                    } else if (Math.abs(bpmDiff) <= 10) {
+                        showAccuracyFeedback('不錯', 'text-warning');
+                    } else {
+                        showAccuracyFeedback('調整節奏', 'text-danger');
+                    }
+                    
+                    // 計算並更新精準度百分比
+                    const accuracy = (gameData.accurateBeats / gameData.totalBeats * 100).toFixed(0);
+                    accuracyBar.style.width = `${accuracy}%`;
+                    accuracyPercent.textContent = `${accuracy}%`;
+                    
+                    // 更新當前 BPM 顯示
+                    currentBpmDisplay.textContent = newBpm;
+                    currentBpmDisplay.classList.add('beat');
+                    setTimeout(() => {
+                        currentBpmDisplay.classList.remove('beat');
+                    }, 500);
+                }
+            }
+            
+            // 更新最後一次時間戳
+            lastTimestamp = now;
+        }
+
+        // 顯示精準度反饋
+        function showAccuracyFeedback(text, colorClass) {
+            // 清除之前的 timeout
+            if (accuracyTimeoutId) {
+                clearTimeout(accuracyTimeoutId);
+            }
+            
+            // 移除之前的顏色類並添加新類
+            accuracyText.className = 'accuracy-text transition-colors ' + colorClass;
+            accuracyText.textContent = text;
+            accuracyText.classList.add('show');
+            
+            // 設置淡出
+            accuracyTimeoutId = setTimeout(() => {
+                accuracyText.classList.remove('show');
+            }, 1500);
+        }
+
+        // 更新進度條
+        function updateProgressBar(percent) {
+            progressBar.style.width = `${percent}%`;
+        }
+
+        // 更新時間顯示
+        function updateTimeDisplay(currentTime, duration) {
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            };
+            
+            timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+        }
+
+        // 結束遊戲
+        function endGame() {
+            // 停止音樂和計時器
+            gameAudio.pause();
+            if (gameTimer) {
+                clearInterval(gameTimer);
+                gameTimer = null;
+            }
+            
+            // 標記遊戲結束
+            gameActive = false;
+            
+            // 更新界面
+            gamePanel.classList.add('hidden');
+            resultPanel.classList.remove('hidden');
+            
+            // 計算遊戲結果
+            const totalBeats = gameData.totalBeats;
+            const accurateBeats = gameData.accurateBeats;
+            const accuracy = totalBeats > 0 ? (accurateBeats / totalBeats * 100).toFixed(0) : 0;
+            
+            // 計算平均 BPM
+            let averageBpm = 0;
+            if (gameData.bpmReadings.length > 0) {
+                averageBpm = Math.round(
+                    gameData.bpmReadings.reduce((sum, bpm) => sum + bpm, 0) / gameData.bpmReadings.length
+                );
+            }
+            
+            // 設置結果標題和評級
+            let resultTitle = '';
+            let resultComment = '';
+            
+            if (accuracy >= 90) {
+                resultTitle = '一流指揮家！';
+                resultComment = '您展現了精湛的指揮技巧，節奏控制幾乎完美！';
+            } else if (accuracy >= 70) {
+                resultTitle = '優秀指揮家！';
+                resultComment = '您的指揮相當不錯，只需稍微調整節奏！';
+            } else if (accuracy >= 50) {
+                resultTitle = '有潛力的指揮家';
+                resultComment = '您有基本的節奏感，繼續練習能更好！';
+            } else {
+                resultTitle = '初學指揮家';
+                resultComment = '節奏控制需要更多練習，多聆聽音樂會有所幫助！';
+            }
+            
+            // 更新結果面板
+            document.getElementById('result-title').textContent = resultTitle;
+            document.getElementById('result-score').textContent = `${accuracy}%`;
+            document.getElementById('result-target-bpm').textContent = targetBpm;
+            document.getElementById('result-average-bpm').textContent = averageBpm || '--';
+            document.getElementById('result-accurate-beats').textContent = accurateBeats;
+            document.getElementById('result-total-beats').textContent = totalBeats;
+            document.getElementById('result-comment').textContent = resultComment;
+        }
+
+        // 重置遊戲
+        function resetGame() {
+            resultPanel.classList.add('hidden');
+            setupPanel.classList.remove('hidden');
+            
+            // 重置遊戲數據
+            lastTimestamp = 0;
+            accelerationCount = 0;
+            gameData = {
+                totalBeats: 0,
+                accurateBeats: 0,
+                bpmReadings: []
+            };
+        }
     </script>
 </body>
 </html>
