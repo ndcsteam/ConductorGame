@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Micro:bit XYZ 座標讀取器</title>
+    <title>Micro:bit Radio XYZ 座標讀取器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
     tailwind.config = {
@@ -53,7 +53,31 @@
 </head>
 <body class="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-4xl">
-        <h1 class="text-3xl font-bold mb-6 text-center text-primary">Micro:bit XYZ 座標讀取器</h1>
+        <h1 class="text-3xl font-bold mb-6 text-center text-primary">Micro:bit Radio XYZ 座標讀取器</h1>
+        
+        <div class="bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg mb-6 text-yellow-800 dark:text-yellow-200">
+            <h3 class="font-bold text-lg mb-2">系統設定指南</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h4 class="font-semibold mb-1">發送端 Micro:bit:</h4>
+                    <ol class="list-decimal list-inside ml-2 text-sm">
+                        <li>設定 radio 分組為 1</li>
+                        <li>讀取加速度計 X、Y、Z 值</li>
+                        <li>打包成 JSON 並透過 radio 發送</li>
+                        <li>此裝置可用電池供電並移動</li>
+                    </ol>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-1">接收端 Micro:bit:</h4>
+                    <ol class="list-decimal list-inside ml-2 text-sm">
+                        <li>設定相同的 radio 分組 1</li>
+                        <li>接收 radio 訊息</li>
+                        <li>通過 USB 序列傳輸轉發數據</li>
+                        <li>此裝置需要連接到電腦</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 shadow-md">
@@ -61,7 +85,7 @@
                 
                 <div class="mb-4">
                     <button id="connectBtn" class="w-full bg-primary hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-md transition">
-                        連接 Micro:bit
+                        連接接收端 Micro:bit
                     </button>
                 </div>
                 
@@ -69,16 +93,10 @@
                     <p id="statusText">尚未連接</p>
                 </div>
                 
-                <div class="flex flex-col space-y-2">
-                    <label class="flex items-center">
-                        <input type="checkbox" id="autoUpdate" class="w-5 h-5 text-primary rounded focus:ring-primary" checked>
-                        <span class="ml-2">自動更新數據</span>
-                    </label>
-                    
-                    <div class="flex items-center">
-                        <label for="updateInterval" class="mr-2">更新間隔 (毫秒):</label>
-                        <input type="number" id="updateInterval" min="50" max="5000" step="50" value="100" 
-                               class="w-24 py-1 px-2 text-base border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700">
+                <div class="bg-blue-100 dark:bg-blue-900 p-3 rounded-md text-blue-800 dark:text-blue-200 text-sm">
+                    <p class="font-semibold">數據流:</p>
+                    <div id="rawData" class="font-mono mt-1 h-16 overflow-y-auto bg-white dark:bg-gray-900 p-2 rounded">
+                        等待接收數據...
                     </div>
                 </div>
             </div>
@@ -154,22 +172,16 @@
             }
         });
 
-        // Micro:bit 服務和特性 UUID
-        const ACCELEROMETER_SERVICE_UUID = 'e95d0753-251d-470a-a062-fa1922dfa9a8';
-        const ACCELEROMETER_DATA_UUID = 'e95dca4b-251d-470a-a062-fa1922dfa9a8';
-        const ACCELEROMETER_PERIOD_UUID = 'e95dfb24-251d-470a-a062-fa1922dfa9a8';
-
         // 全域變數
-        let microbitDevice = null;
-        let accelerometerCharacteristic = null;
-        let notificationsEnabled = false;
-        let updateIntervalId = null;
+        let port = null;
+        let reader = null;
+        let readLoop = false;
+        let lastDataTime = 0;
 
         // DOM 元素
         const connectBtn = document.getElementById('connectBtn');
         const statusText = document.getElementById('statusText');
-        const autoUpdateCheckbox = document.getElementById('autoUpdate');
-        const updateIntervalInput = document.getElementById('updateInterval');
+        const rawData = document.getElementById('rawData');
         const xValue = document.getElementById('xValue');
         const yValue = document.getElementById('yValue');
         const zValue = document.getElementById('zValue');
@@ -181,56 +193,58 @@
 
         // 連接到 Micro:bit
         connectBtn.addEventListener('click', async () => {
-            try {
-                if (microbitDevice && microbitDevice.gatt.connected) {
-                    await disconnectFromDevice();
-                    return;
-                }
+            if (port) {
+                await disconnectFromDevice();
+                return;
+            }
 
-                statusText.textContent = '正在尋找 Micro:bit 裝置...';
+            try {
+                statusText.textContent = '請選擇接收端 micro:bit 裝置...';
                 
                 // 檢查瀏覽器支援
-                if (!navigator.bluetooth) {
-                    throw new Error('您的瀏覽器不支援 Web Bluetooth API。請使用 Chrome、Edge 或其他支援的瀏覽器。');
+                if (!navigator.serial) {
+                    throw new Error('您的瀏覽器不支援 Web Serial API。請使用 Chrome、Edge 或其他支援的瀏覽器。');
                 }
                 
-                // 請求裝置
-                microbitDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ namePrefix: 'BBC micro:bit' }],
-                    optionalServices: [ACCELEROMETER_SERVICE_UUID]
-                });
+                // 請求序列埠
+                port = await navigator.serial.requestPort();
                 
                 statusText.textContent = '連接中...';
                 
-                // 連接到 GATT 伺服器
-                const server = await microbitDevice.gatt.connect();
+                // 開啟序列埠 (波特率設為 115200)
+                await port.open({ baudRate: 115200 });
                 
-                // 獲取加速度計服務
-                const service = await server.getPrimaryService(ACCELEROMETER_SERVICE_UUID);
+                // 設置讀取器
+                const decoder = new TextDecoder();
+                reader = port.readable.getReader();
+                readLoop = true;
                 
-                // 獲取加速度計特性
-                accelerometerCharacteristic = await service.getCharacteristic(ACCELEROMETER_DATA_UUID);
-                
-                // 設置加速度計頻率 (10 = 100ms)
-                const periodCharacteristic = await service.getCharacteristic(ACCELEROMETER_PERIOD_UUID);
-                const period = new Uint8Array([10]);
-                await periodCharacteristic.writeValue(period);
-                
-                // 啟動通知
-                await accelerometerCharacteristic.startNotifications();
-                accelerometerCharacteristic.addEventListener('characteristicvaluechanged', handleAccelerometerData);
-                notificationsEnabled = true;
-                
-                statusText.textContent = '已連接';
+                statusText.textContent = '已連接 - 等待數據中';
                 connectBtn.textContent = '中斷連接';
                 
-                // 設置間隔自動更新
-                if (autoUpdateCheckbox.checked) {
-                    startAutoUpdate();
-                }
+                // 開始讀取數據
+                let buffer = '';
                 
-                // 監聽裝置中斷連接事件
-                microbitDevice.addEventListener('gattserverdisconnected', handleDisconnection);
+                while (readLoop) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        break;
+                    }
+                    
+                    // 將收到的數據添加到緩衝區
+                    buffer += decoder.decode(value);
+                    
+                    // 處理完整行
+                    let newlineIndex;
+                    while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+                        const line = buffer.substring(0, newlineIndex).trim();
+                        buffer = buffer.substring(newlineIndex + 1);
+                        
+                        if (line) {
+                            processSerialData(line);
+                        }
+                    }
+                }
                 
             } catch (error) {
                 console.error('連接錯誤:', error);
@@ -239,15 +253,28 @@
             }
         });
 
-        // 處理加速度計數據
-        function handleAccelerometerData(event) {
-            const value = event.target.value;
-            const x = value.getInt16(0, true);
-            const y = value.getInt16(2, true);
-            const z = value.getInt16(4, true);
-            
-            updateDisplay(x, y, z);
-            logData(x, y, z);
+        // 處理序列數據
+        function processSerialData(line) {
+            try {
+                // 更新原始數據顯示
+                rawData.textContent = line;
+                
+                // 嘗試解析JSON數據
+                const data = JSON.parse(line);
+                
+                // 檢查是否有X、Y、Z值
+                if ('x' in data && 'y' in data && 'z' in data) {
+                    // 更新UI
+                    updateDisplay(data.x, data.y, data.z);
+                    
+                    // 更新狀態文字
+                    const now = new Date();
+                    lastDataTime = now.getTime();
+                    statusText.textContent = `接收中 - 上次更新: ${now.toLocaleTimeString()}`;
+                }
+            } catch (e) {
+                console.error('處理數據錯誤:', e, line);
+            }
         }
 
         // 更新顯示
@@ -264,6 +291,9 @@
             xBar.style.height = `${Math.min(Math.max(xPercent, 0), 100)}%`;
             yBar.style.height = `${Math.min(Math.max(yPercent, 0), 100)}%`;
             zBar.style.height = `${Math.min(Math.max(zPercent, 0), 100)}%`;
+            
+            // 記錄數據
+            logData(x, y, z);
         }
 
         // 記錄數據
@@ -289,98 +319,50 @@
 
         // 中斷裝置連接
         async function disconnectFromDevice() {
-            if (updateIntervalId) {
-                clearInterval(updateIntervalId);
-                updateIntervalId = null;
-            }
-            
-            if (accelerometerCharacteristic && notificationsEnabled) {
+            if (reader) {
+                readLoop = false;
                 try {
-                    await accelerometerCharacteristic.stopNotifications();
-                    accelerometerCharacteristic.removeEventListener('characteristicvaluechanged', handleAccelerometerData);
-                    notificationsEnabled = false;
+                    await reader.cancel();
+                    reader.releaseLock();
                 } catch (e) {
-                    console.log('停止通知時發生錯誤:', e);
+                    console.log('停止讀取時發生錯誤:', e);
                 }
+                reader = null;
             }
             
-            if (microbitDevice && microbitDevice.gatt.connected) {
+            if (port) {
                 try {
-                    microbitDevice.removeEventListener('gattserverdisconnected', handleDisconnection);
-                    await microbitDevice.gatt.disconnect();
+                    await port.close();
                 } catch (e) {
-                    console.log('中斷連接時發生錯誤:', e);
+                    console.log('關閉連接時發生錯誤:', e);
                 }
+                port = null;
             }
             
-            microbitDevice = null;
-            accelerometerCharacteristic = null;
             statusText.textContent = '已中斷連接';
-            connectBtn.textContent = '連接 Micro:bit';
+            connectBtn.textContent = '連接接收端 Micro:bit';
         }
-
-        // 處理意外中斷連接
-        function handleDisconnection() {
-            console.log('裝置已中斷連接');
-            statusText.textContent = '裝置已中斷連接';
-            connectBtn.textContent = '連接 Micro:bit';
-            
-            if (updateIntervalId) {
-                clearInterval(updateIntervalId);
-                updateIntervalId = null;
-            }
-            
-            microbitDevice = null;
-            accelerometerCharacteristic = null;
-            notificationsEnabled = false;
-        }
-
-        // 自動更新設置
-        function startAutoUpdate() {
-            if (updateIntervalId) {
-                clearInterval(updateIntervalId);
-            }
-            
-            const interval = parseInt(updateIntervalInput.value);
-            updateIntervalId = setInterval(async () => {
-                if (accelerometerCharacteristic && microbitDevice && microbitDevice.gatt.connected) {
-                    try {
-                        // 讀取最新數據
-                        const value = await accelerometerCharacteristic.readValue();
-                        const x = value.getInt16(0, true);
-                        const y = value.getInt16(2, true);
-                        const z = value.getInt16(4, true);
-                        
-                        updateDisplay(x, y, z);
-                        logData(x, y, z);
-                    } catch (error) {
-                        console.error('讀取數據錯誤:', error);
-                    }
-                }
-            }, interval);
-        }
-
-        // 自動更新切換
-        autoUpdateCheckbox.addEventListener('change', () => {
-            if (autoUpdateCheckbox.checked && microbitDevice && microbitDevice.gatt.connected) {
-                startAutoUpdate();
-            } else if (updateIntervalId) {
-                clearInterval(updateIntervalId);
-                updateIntervalId = null;
-            }
-        });
-
-        // 更新間隔變更
-        updateIntervalInput.addEventListener('change', () => {
-            if (autoUpdateCheckbox.checked && microbitDevice && microbitDevice.gatt.connected) {
-                startAutoUpdate();
-            }
-        });
 
         // 清除日誌
         clearLogBtn.addEventListener('click', () => {
             dataLog.innerHTML = '';
         });
+
+        // 檢測信號丟失
+        setInterval(() => {
+            if (port && lastDataTime > 0) {
+                const now = new Date().getTime();
+                const timeSinceLastData = now - lastDataTime;
+                
+                // 如果超過3秒未收到數據
+                if (timeSinceLastData > 3000) {
+                    statusText.textContent = `警告: ${Math.floor(timeSinceLastData/1000)}秒未收到數據`;
+                    statusText.classList.add('text-red-500');
+                } else {
+                    statusText.classList.remove('text-red-500');
+                }
+            }
+        }, 1000);
     </script>
 </body>
 </html>
