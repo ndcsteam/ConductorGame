@@ -887,8 +887,8 @@
                 // 音符符號庫
                 const musicSymbols = ['♩', '♪', '♫', '♬', '𝄞', '𝅘𝅥𝅮', '𝅗𝅥', '𝄐', '𝄑'];
                 
-                // 創建固定數量的初始音符
-                const initialNotes = 6;
+                // 創建更多初始音符
+                const initialNotes = 10;
                 
                 // 添加中央擴散的動畫樣式 (無旋轉)
                 const centerRadiateStyle = document.createElement('style');
@@ -974,19 +974,19 @@
                     }, duration * 1000 + 100);
                 }
                 
-                // 初始創建幾個音符
+                // 初始創建更多音符，間隔更短
                 for (let i = 0; i < initialNotes; i++) {
-                    setTimeout(() => createNote(), i * 300);
+                    setTimeout(() => createNote(), i * 200);
                 }
                 
-                // 設置定時器，每隔一段時間生成新的音符
+                // 設置定時器，以更高頻率生成新的音符
                 const noteInterval = setInterval(() => {
                     if (!document.contains(musicNotesContainer)) {
                         clearInterval(noteInterval);
                         return;
                     }
                     createNote();
-                }, 2000); // 每2秒生成一個新音符
+                }, 800); // 每0.8秒生成一個新音符
                 
                 // 存儲間隔定時器ID，以便在頁面切換時清除
                 musicNotesContainer.dataset.intervalId = noteInterval;
