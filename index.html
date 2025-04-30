@@ -236,13 +236,15 @@
                     <h4 class="font-semibold mb-1">發送端 Micro:bit:</h4>
                     <div class="mt-2 p-2 bg-white dark:bg-gray-950 rounded text-xs font-mono overflow-auto">
                         radio.setGroup(1)<br>
+                        basic.showIcon(IconNames.Happy)<br>
                         basic.forever(function() {<br>
                         &nbsp;&nbsp;let x = input.acceleration(Dimension.X)<br>
                         &nbsp;&nbsp;let y = input.acceleration(Dimension.Y)<br>
                         &nbsp;&nbsp;let z = input.acceleration(Dimension.Z)<br>
                         &nbsp;&nbsp;let data = "X:" + x + ",Y:" + y + ",Z:" + z<br>
                         &nbsp;&nbsp;radio.sendString(data)<br>
-                        &nbsp;&nbsp;basic.pause(50) // 高頻率更新<br>
+                        &nbsp;&nbsp;led.toggle(0, 0) // 視覺回饋<br>
+                        &nbsp;&nbsp;basic.pause(20) // 更高頻率更新<br>
                         })
                     </div>
                 </div>
@@ -453,9 +455,12 @@
 
         // 更新準星位置
         function updateCrosshairPosition(x, y, z) {
-            // 如果尚未校準，不更新位置
-            if (!isCalibrated && !calibrationX && !calibrationY) {
-                return;
+            // 如果尚未校準且沒有初始值，先創建一個基準點
+            if (!isCalibrated && calibrationX === 0 && calibrationY === 0) {
+                // 自動設置初始校準值
+                calibrationX = x;
+                calibrationY = y;
+                console.log("自動設置初始校準值:", calibrationX, calibrationY);
             }
             
             // 計算相對於校準位置的偏移
@@ -467,9 +472,9 @@
             if (Math.abs(deltaX) < deadzoneValue) deltaX = 0;
             if (Math.abs(deltaY) < deadzoneValue) deltaY = 0;
             
-            // 套用靈敏度
-            const sensX = parseFloat(sensitivityX.value) / 5;
-            const sensY = parseFloat(sensitivityY.value) / 5;
+            // 套用靈敏度 (增強初始靈敏度)
+            const sensX = parseFloat(sensitivityX.value) / 1.5; // 增強效果
+            const sensY = parseFloat(sensitivityY.value) / 1.5;
             
             // 計算準星位置（反轉Y軸方向以匹配直覺）
             const areaRect = gameplayArea.getBoundingClientRect();
@@ -477,19 +482,24 @@
             const areaHeight = areaRect.height;
             
             // 將加速度計值映射到畫面座標
-            // X軸校準值0對應畫面中心，向右傾斜增加值，向左減少值
-            // 將X值限制在視窗範圍內
+            // 基於 X 軸加速度控制水平位置 (左右傾斜)
             let posX = (areaWidth / 2) + (deltaX * sensX);
             posX = Math.max(0, Math.min(areaWidth, posX));
             
-            // Y軸校準值0對應畫面中心，向前傾斜增加值，向後減少值
-            // 由於螢幕Y軸向下，我們需要反轉方向
+            // 基於 Y 軸加速度控制垂直位置 (前後傾斜)
+            // 因為 micro:bit 向前傾斜時 Y 值增加，但屏幕 Y 座標向下增加，所以我們反轉方向
             let posY = (areaHeight / 2) - (deltaY * sensY);
             posY = Math.max(0, Math.min(areaHeight, posY));
             
-            // 更新準星位置
-            crosshair.style.left = `${posX}px`;
-            crosshair.style.top = `${posY}px`;
+            // 更新準星位置 (直接設置像素值)
+            crosshair.style.left = posX + 'px';
+            crosshair.style.top = posY + 'px';
+            
+            // 添加調試信息
+            console.log("準星位置更新:", 
+                "deltaX:", deltaX, 
+                "deltaY:", deltaY, 
+                "位置:", posX.toFixed(1), posY.toFixed(1));
         }
 
         // 校準按鈕事件
@@ -507,6 +517,8 @@
             
             statusText.textContent = '已校準 - 當前位置設為中心點';
             calibrateBtn.textContent = '重新校準';
+            
+            console.log("手動校準完成:", calibrationX, calibrationY, calibrationZ);
             
             // 產生一個新目標
             spawnTarget();
