@@ -37,6 +37,8 @@
                         'fade-in': 'fadeIn 1s ease-out forwards',
                         'fade-out': 'fadeOut 1s ease-out forwards',
                         'conductor': 'conductor 1s ease-in-out infinite',
+                        'float-slow': 'float 20s ease-in-out infinite',
+                        'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     },
                     keyframes: {
                         spotlight: {
@@ -60,6 +62,14 @@
                             '0%, 100%': { transform: 'rotate(-5deg)' },
                             '50%': { transform: 'rotate(15deg)' },
                         },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        pulse: {
+                            '0%, 100%': { opacity: 1 },
+                            '50%': { opacity: 0.7 },
+                        }
                     },
                     backgroundImage: {
                         'stage-texture': "url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z\" fill=\"%239C92AC\" fill-opacity=\"0.05\" fill-rule=\"evenodd\"/%3E%3C/svg%3E')",
@@ -251,6 +261,90 @@
             left: 100%;
         }
         
+        /* Cover Page 特效 */
+        .cover-page {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .cover-title {
+            position: relative;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+            letter-spacing: 0.1em;
+        }
+        
+        .cover-subtitle {
+            position: relative;
+            letter-spacing: 0.05em;
+            opacity: 0.8;
+        }
+        
+        .grand-button {
+            background: linear-gradient(to bottom, rgba(212, 175, 55, 0.3), rgba(150, 75, 0, 0.3));
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            padding: 12px 28px;
+            font-size: 1.2rem;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .grand-button:hover {
+            background: linear-gradient(to bottom, rgba(212, 175, 55, 0.4), rgba(150, 75, 0, 0.4));
+            border-color: rgba(212, 175, 55, 0.7);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(212, 175, 55, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .grand-button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .grand-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: 0.7s;
+        }
+        
+        .grand-button:hover::after {
+            left: 100%;
+        }
+        
+        .orchestra-image {
+            position: relative;
+            width: 90%;
+            max-width: 600px;
+            margin: 0 auto;
+            opacity: 0.7;
+            filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.2));
+        }
+        
+        .floating-note {
+            position: absolute;
+            color: rgba(212, 175, 55, 0.3);
+            font-size: 2rem;
+            filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.2));
+            pointer-events: none;
+            animation-duration: calc(15s + (var(--note-index) * 5s));
+            animation-delay: calc(var(--note-index) * 2s);
+        }
+        
         /* 鍵盤指示器樣式 */
         .keyboard-indicator {
             display: flex;
@@ -272,6 +366,21 @@
             color: rgba(212, 175, 55, 0.8);
             font-size: 14px;
             background: rgba(93, 64, 55, 0.15);
+        }
+        
+        /* 頁面轉場 */
+        .page-transition {
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        
+        .page-hidden {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
         }
         
         /* 指揮棒動畫 */
@@ -343,7 +452,7 @@
         /* 音符裝飾 */
         @keyframes float {
             0%, 100% { transform: translateY(0) rotate(0); }
-            50% { transform: translateY(-10px) rotate(5deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
         }
         
         .music-note {
@@ -470,6 +579,16 @@
             50% { transform: scale(1.1); color: rgba(212, 175, 55, 1); text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); }
             100% { transform: scale(1); color: rgba(212, 175, 55, 0.9); }
         }
+        
+        /* 指揮家圖標動畫 */
+        .conductor-icon {
+            position: relative;
+            transition: all 0.5s ease;
+        }
+        
+        .conductor-icon:hover .conductor-wand {
+            animation: conducting 1.5s ease-in-out infinite;
+        }
     </style>
 </head>
 <body>
@@ -487,7 +606,37 @@
     <div class="music-note note-2">♫</div>
     <div class="music-note note-3">♩</div>
     
-    <div class="container mx-auto px-4 py-8 max-w-3xl">
+    <!-- 封面頁 -->
+    <div id="cover-page" class="cover-page page-transition">
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden">
+            <div style="--note-index: 1" class="floating-note text-4xl animate-float-slow" style="top: 15%; left: 80%;">♩</div>
+            <div style="--note-index: 2" class="floating-note text-3xl animate-float-slow" style="top: 25%; left: 20%;">♪</div>
+            <div style="--note-index: 3" class="floating-note text-5xl animate-float-slow" style="top: 50%; left: 15%;">♫</div>
+            <div style="--note-index: 4" class="floating-note text-4xl animate-float-slow" style="top: 60%; left: 70%;">♬</div>
+            <div style="--note-index: 5" class="floating-note text-3xl animate-float-slow" style="top: 75%; left: 40%;">♩</div>
+            <div style="--note-index: 6" class="floating-note text-5xl animate-float-slow" style="top: 30%; left: 60%;">♪</div>
+        </div>
+        
+        <h1 class="cover-title text-5xl md:text-6xl font-bold mb-4 text-center text-conductor-gold">交響樂指揮家</h1>
+        <p class="cover-subtitle text-xl mb-8 text-center text-gray-300">展現您的音樂天賦，帶領樂團演繹經典樂章</p>
+        
+        <div class="orchestra-image mb-10 mt-4">
+            <div class="conductor-icon mx-auto relative">
+                <img src="./images/ConductorFront.png" alt="指揮家" class="w-auto h-48 object-contain mx-auto filter drop-shadow-2xl" />
+            </div>
+        </div>
+        
+        <button id="start-game-button" class="grand-button mb-8 animate-pulse-slow">
+            開始指揮
+        </button>
+        
+        <div class="text-center text-gray-400 text-sm max-w-md px-4">
+            使用您的 Micro:bit 作為指揮棒，或使用鍵盤空格鍵指揮樂團，體驗音樂指揮的魅力
+        </div>
+    </div>
+
+    <!-- 主遊戲內容 -->
+    <div id="main-content" class="container mx-auto px-4 py-8 max-w-3xl page-transition page-hidden">
         <h1 class="text-3xl font-bold mb-6 text-center text-conductor-gold">交響樂指揮家</h1>
 
         <!-- 遊戲狀態視窗 -->
@@ -534,7 +683,7 @@
                     <div class="mt-2 text-xs text-gray-400">
                         計算方式：平均節拍法 | 靈敏度調整：420ms
                     </div>
-                    <button id="start-game-button" class="elegant-button">
+                    <button id="start-music-button" class="elegant-button">
                         開始指揮
                     </button>
                 </div>
@@ -693,6 +842,20 @@
     </div>
 
     <script>
+        // 頁面切換控制
+        document.addEventListener("DOMContentLoaded", function() {
+            const coverPage = document.getElementById('cover-page');
+            const mainContent = document.getElementById('main-content');
+            const startGameButton = document.getElementById('start-game-button');
+            
+            startGameButton.addEventListener('click', function() {
+                coverPage.classList.add('page-hidden');
+                setTimeout(() => {
+                    mainContent.classList.remove('page-hidden');
+                }, 400);
+            });
+        });
+        
         // 全局變數
         let port;
         let reader;
@@ -776,7 +939,7 @@
         const gamePanel = document.getElementById('game-panel');
         const resultPanel = document.getElementById('result-panel');
         const musicSelect = document.getElementById('music-select');
-        const startGameButton = document.getElementById('start-game-button');
+        const startMusicButton = document.getElementById('start-music-button');
         const stopGameButton = document.getElementById('stop-game-button');
         const playAgainButton = document.getElementById('play-again-button');
         const gameAudio = document.getElementById('game-audio');
@@ -840,7 +1003,7 @@
                     connectButton.classList.add('bg-conductor-velvet/20');
                     connectButton.disabled = true;
                     
-                    // 顯示設置面板
+                    // 成功連接後，直接顯示遊戲設置面板
                     setupPanel.classList.remove('hidden');
                     
                     // 開始讀取數據
@@ -871,7 +1034,7 @@
         }
 
         // 開始遊戲按鈕
-        startGameButton.addEventListener('click', startGame);
+        startMusicButton.addEventListener('click', startGame);
         
         // 停止遊戲按鈕
         stopGameButton.addEventListener('click', endGame);
