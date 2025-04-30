@@ -886,8 +886,17 @@
                     // 如果支援Web Serial API，嘗試連接
                     if ('serial' in navigator) {
                         try {
+                            // 添加指示訊息
+                            connectionStatus.textContent = '請從彈出對話框選擇Micro:bit設備...';
+                            connectionStatus.classList.remove('hidden');
+                            
                             // 請求 serial port
-                            port = await navigator.serial.requestPort();
+                            port = await navigator.serial.requestPort({
+                                // 可選：提供過濾條件，如果您知道 Micro:bit 的 USB 供應商 ID
+                                // filters: [{ usbVendorId: 0x0d28 }] // Micro:bit 的 USB 供應商 ID
+                            });
+                            
+                            // 連接設備
                             await port.open({ baudRate: 115200 });
                             
                             // 連接成功提示
@@ -899,7 +908,19 @@
                             readSerialData();
                         } catch (error) {
                             console.log('使用鍵盤模式：', error);
-                            // 如果連接失敗，維持鍵盤模式，不做特殊處理
+                            
+                            // 根據錯誤類型顯示不同的訊息
+                            if (error.name === 'NotFoundError') {
+                                connectionStatus.textContent = '未找到可用的指揮棒設備，使用鍵盤操作';
+                            } else if (error.name === 'SecurityError') {
+                                connectionStatus.textContent = '權限被拒絕，使用鍵盤空格鍵或上箭頭進行指揮';
+                            } else if (error.message && error.message.includes('No port selected')) {
+                                connectionStatus.textContent = '未選擇設備，使用鍵盤空格鍵或上箭頭進行指揮';
+                            } else {
+                                connectionStatus.textContent = '無法連接指揮棒，使用鍵盤空格鍵或上箭頭進行指揮';
+                            }
+                            
+                            connectionStatus.classList.add('text-yellow-500');
                         }
                     }
                 }, 400);
@@ -1103,7 +1124,6 @@
         };
 
         // DOM 元素
-        const connectButton = document.getElementById('connect-button');
         const connectionStatus = document.getElementById('connection-status');
         const connectionPanel = document.getElementById('connection-panel');
         const setupPanel = document.getElementById('setup-panel');
@@ -1156,37 +1176,6 @@
         if (!('serial' in navigator)) {
             connectionStatus.textContent = '您的瀏覽器不支援 Micro:bit 連接。請使用鍵盤操作。';
             connectionStatus.classList.add('text-yellow-500');
-            connectButton.textContent = '使用鍵盤模式';
-            connectButton.addEventListener('click', function() {
-                setupPanel.classList.remove('hidden');
-            });
-        } else {
-            // 連接按鈕點擊事件
-            connectButton.addEventListener('click', async () => {
-                try {
-                    // 請求 serial port
-                    port = await navigator.serial.requestPort();
-                    await port.open({ baudRate: 115200 });
-                    
-                    connectionStatus.textContent = '已連接指揮棒';
-                    connectionStatus.classList.add('text-green-400');
-                    connectButton.textContent = '連接成功';
-                    connectButton.classList.add('bg-conductor-velvet/20');
-                    connectButton.disabled = true;
-                    
-                    // 成功連接後，直接顯示遊戲設置面板
-                    setupPanel.classList.remove('hidden');
-                    
-                    // 開始讀取數據
-                    readSerialData();
-                    
-                } catch (error) {
-                    console.error('連接錯誤:', error);
-                    connectionStatus.textContent = '連接失敗，請使用鍵盤操作。';
-                    connectionStatus.classList.add('text-yellow-500');
-                    setupPanel.classList.remove('hidden');
-                }
-            });
         }
 
         // 啟動燈光效果
