@@ -1,177 +1,565 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>指揮家遊戲：節拍大師</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap">
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        primary: '#5D5CDE',
+                        primary: '#d4af37', // 金色
+                        secondary: '#8b4513', // 深棕色
+                        accent: '#964B00', // 銅色
                         success: '#4CAF50',
                         warning: '#FF9800',
                         danger: '#F44336',
+                        conductor: {
+                            dark: '#121212',
+                            medium: '#1a1a1a',
+                            light: '#222222',
+                            gold: '#d4af37',
+                            copper: '#964B00',
+                            velvet: '#5D0A0A',
+                            wood: '#5d4037',
+                        }
+                    },
+                    fontFamily: {
+                        'sans': ['Noto Sans TC', 'sans-serif'],
                     },
                     animation: {
+                        'spotlight': 'spotlight 5s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite',
+                        'fade-in': 'fadeIn 1s ease-out forwards',
+                        'fade-out': 'fadeOut 1s ease-out forwards',
                         'conductor': 'conductor 1s ease-in-out infinite',
-                        'pulse-slow': 'pulse 2s ease-in-out infinite',
                     },
                     keyframes: {
+                        spotlight: {
+                            '0%': { opacity: 0.5, transform: 'translate(-30%, -30%) scale(0.8)' },
+                            '50%': { opacity: 0.8, transform: 'translate(-25%, -25%) scale(1)' },
+                            '100%': { opacity: 0.5, transform: 'translate(-30%, -30%) scale(0.8)' },
+                        },
+                        glow: {
+                            '0%, 100%': { filter: 'brightness(1)' },
+                            '50%': { filter: 'brightness(1.2)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: 0 },
+                            '100%': { opacity: 1 },
+                        },
+                        fadeOut: {
+                            '0%': { opacity: 1 },
+                            '100%': { opacity: 0 },
+                        },
                         conductor: {
                             '0%, 100%': { transform: 'rotate(-5deg)' },
                             '50%': { transform: 'rotate(15deg)' },
                         },
+                    },
+                    backgroundImage: {
+                        'stage-texture': "url('data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z\" fill=\"%239C92AC\" fill-opacity=\"0.05\" fill-rule=\"evenodd\"/%3E%3C/svg%3E')",
                     }
                 }
             }
         }
     </script>
     <style>
-        .dark {
-            --bg-main: #181818;
-            --text-main: #f3f4f6;
-            --bg-card: #2d2d2d;
-        }
-        
-        .light {
-            --bg-main: #ffffff;
-            --text-main: #1f2937;
-            --bg-card: #f9f9f9;
+        * {
+            box-sizing: border-box;
+            font-family: 'Noto Sans TC', sans-serif;
         }
         
         body {
-            background-color: var(--bg-main);
-            color: var(--text-main);
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        .card {
-            background-color: var(--bg-card);
-        }
-
-        .pulse {
-            animation: pulse 0.8s ease-in-out;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Noto Sans TC', sans-serif;
+            position: relative;
+            overflow-x: hidden;
         }
         
-        .beat {
-            animation: beat 0.5s ease-in-out;
+        /* 舞台和聚光燈效果 */
+        .concert-hall {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 30% 30%, rgba(212, 175, 55, 0.08) 0%, rgba(212, 175, 55, 0) 50%),
+                linear-gradient(180deg, #121212 0%, #0a0a0a 100%);
+            z-index: -2;
         }
         
-        @keyframes beat {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        .spotlights {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
         }
-
-        /* 給指揮棒製作動畫 */
+        
+        .spotlight {
+            position: absolute;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0) 70%);
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transform-origin: center;
+        }
+        
+        .spotlight-1 {
+            top: 0;
+            left: 0;
+            animation: spotlight-1 15s ease-in-out infinite;
+        }
+        
+        .spotlight-2 {
+            top: 0;
+            right: 0;
+            animation: spotlight-2 18s ease-in-out infinite 2s;
+        }
+        
+        .spotlight-3 {
+            bottom: 0;
+            left: 30%;
+            animation: spotlight-3 20s ease-in-out infinite 5s;
+        }
+        
+        @keyframes spotlight-1 {
+            0%, 100% { opacity: 0.4; transform: scale(0.8); }
+            50% { opacity: 0.6; transform: scale(1); }
+        }
+        
+        @keyframes spotlight-2 {
+            0%, 100% { opacity: 0.3; transform: scale(0.7) rotate(-15deg); }
+            50% { opacity: 0.5; transform: scale(0.9) rotate(-5deg); }
+        }
+        
+        @keyframes spotlight-3 {
+            0%, 100% { opacity: 0.3; transform: scale(0.7) rotate(10deg); }
+            50% { opacity: 0.5; transform: scale(0.9) rotate(5deg); }
+        }
+        
+        /* 舞台紋理 */
+        .stage-texture {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z" fill="%239C92AC" fill-opacity="0.05" fill-rule="evenodd"/%3E%3C/svg%3E');
+            opacity: 0.12;
+            z-index: -1;
+        }
+        
+        /* 指揮台效果 */
+        .conductor-stage {
+            background: linear-gradient(180deg, rgba(93, 64, 55, 0.4) 0%, rgba(93, 64, 55, 0.25) 100%);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5),
+                        inset 0 0 15px rgba(212, 175, 55, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .conductor-stage::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.05) 0%, rgba(212, 175, 55, 0) 50%);
+            pointer-events: none;
+        }
+        
+        /* 旋律波浪 */
+        .melody-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0) 0%, rgba(212, 175, 55, 0.2) 50%, rgba(212, 175, 55, 0) 100%);
+            filter: blur(2px);
+            opacity: 0;
+            transform: translateY(10px);
+            z-index: 1;
+        }
+        
+        .melody-wave.active {
+            animation: wave 1.2s ease-out;
+        }
+        
+        @keyframes wave {
+            0% { opacity: 0; transform: translateY(10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; width: 100%; }
+            100% { opacity: 0; width: 100%; transform: translateY(0); }
+        }
+        
+        /* 金色裝飾線 */
+        .gold-divider {
+            height: 1px;
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0) 0%, rgba(212, 175, 55, 0.5) 50%, rgba(212, 175, 55, 0) 100%);
+            margin: 12px 0;
+        }
+        
+        /* 優雅按鈕 */
+        .elegant-button {
+            background: linear-gradient(to bottom, rgba(212, 175, 55, 0.2), rgba(150, 75, 0, 0.2));
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            color: rgba(212, 175, 55, 0.9);
+            letter-spacing: 0.05em;
+            padding: 8px 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+        
+        .elegant-button:hover {
+            background: linear-gradient(to bottom, rgba(212, 175, 55, 0.3), rgba(150, 75, 0, 0.3));
+            border-color: rgba(212, 175, 55, 0.5);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+        
+        .elegant-button:active {
+            transform: translateY(1px);
+        }
+        
+        .elegant-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .elegant-button:hover::after {
+            left: 100%;
+        }
+        
+        /* 鍵盤指示器樣式 */
+        .keyboard-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+        
+        .key {
+            width: 30px;
+            height: 30px;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 5px;
+            color: rgba(212, 175, 55, 0.8);
+            font-size: 14px;
+            background: rgba(93, 64, 55, 0.15);
+        }
+        
+        /* 指揮棒動畫 */
         .conductor-wand {
             transform-origin: bottom center;
+            position: relative;
         }
-
+        
         .conducting {
             animation: conducting 0.5s ease-in-out;
         }
-
+        
         @keyframes conducting {
-            0% { transform: rotate(-10deg); }
+            0% { transform: rotate(-20deg); }
             50% { transform: rotate(30deg); }
             100% { transform: rotate(-10deg); }
         }
-
-        /* 進度條動畫 */
-        @keyframes progress {
-            0% { width: 0%; }
-            100% { width: 100%; }
-        }
-
-        .progress-animate {
-            animation: progress linear forwards;
-        }
-
-        /* BPM 差異指示器 */
-        .bpm-indicator {
-            transition: left 0.3s ease-out;
-        }
-
-        /* 精度等級顯示 */
-        .accuracy-text {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
+        
+        /* 指揮棒反光效果 */
+        .wand-highlight {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 70%;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.7), transparent);
+            opacity: 0.4;
         }
         
-        .accuracy-text.show {
+        /* 反應性指示器 */
+        .reactive-indicator {
+            transition: all 0.3s ease;
+        }
+        
+        .reactive-indicator.active {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+        
+        /* 精準度指示器增強 */
+        .accuracy-bar-container {
+            position: relative;
+            background: rgba(30, 30, 30, 0.5);
+            border-radius: 999px;
+            overflow: hidden;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .accuracy-bar {
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0.5), rgba(212, 175, 55, 0.8));
+            transition: width 0.5s ease-out;
+            position: relative;
+        }
+        
+        .accuracy-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40%;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2), transparent);
+            border-radius: 999px 999px 0 0;
+        }
+        
+        /* 音符裝飾 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+        
+        .music-note {
+            position: absolute;
+            opacity: 0.1;
+            pointer-events: none;
+        }
+        
+        .note-1 {
+            top: 20%;
+            left: 10%;
+            animation: float 10s ease-in-out infinite;
+        }
+        
+        .note-2 {
+            top: 60%;
+            right: 15%;
+            animation: float 13s ease-in-out infinite 1s;
+        }
+        
+        .note-3 {
+            bottom: 15%;
+            left: 20%;
+            animation: float 15s ease-in-out infinite 2s;
+        }
+        
+        /* 模擬舞台照明 */
+        .stage-lighting {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        
+        .stage-lighting.active {
             opacity: 1;
-            transform: translateY(0);
+        }
+        
+        .lighting-beam {
+            position: absolute;
+            width: 150px;
+            height: 150%;
+            background: radial-gradient(ellipse at top, rgba(212, 175, 55, 0.1), transparent 70%);
+            transform-origin: top center;
+        }
+        
+        .beam-1 {
+            left: 20%;
+            transform: rotate(-20deg);
+            animation: beam-move-1 10s infinite alternate;
+        }
+        
+        .beam-2 {
+            left: 50%;
+            transform: rotate(0deg);
+            animation: beam-move-2 15s infinite alternate-reverse;
+        }
+        
+        .beam-3 {
+            right: 20%;
+            transform: rotate(20deg);
+            animation: beam-move-3 12s infinite alternate;
+        }
+        
+        @keyframes beam-move-1 {
+            0% { transform: rotate(-25deg); }
+            100% { transform: rotate(-15deg); }
+        }
+        
+        @keyframes beam-move-2 {
+            0% { transform: rotate(-5deg); }
+            100% { transform: rotate(5deg); }
+        }
+        
+        @keyframes beam-move-3 {
+            0% { transform: rotate(15deg); }
+            100% { transform: rotate(25deg); }
+        }
+        
+        /* 模擬木質指揮台 */
+        .podium {
+            background: linear-gradient(135deg, #5d4037 0%, #3e2723 100%);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        
+        .podium::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml,%3Csvg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M0 0h20v20H0V0zm10 17L0 27v10h10V17zm10 0L10 27v10h10V17zM0 0v7l10 10h20V0H0z" fill="%23000000" fill-opacity="0.1" fill-rule="evenodd"/%3E%3C/svg%3E');
+            opacity: 0.1;
+        }
+        
+        /* 模擬絲絨窗簾 */
+        .velvet-curtain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: #5D0A0A; /* 深紅絲絨色 */
+            box-shadow: 0 0 10px rgba(93, 10, 10, 0.5);
+            z-index: 1;
+        }
+        
+        /* BPM 脈動效果 */
+        .bpm-pulse {
+            animation: bpm-pulse 0.5s ease-in-out;
+        }
+        
+        @keyframes bpm-pulse {
+            0% { transform: scale(1); color: rgba(212, 175, 55, 0.9); }
+            50% { transform: scale(1.1); color: rgba(212, 175, 55, 1); text-shadow: 0 0 10px rgba(212, 175, 55, 0.5); }
+            100% { transform: scale(1); color: rgba(212, 175, 55, 0.9); }
         }
     </style>
 </head>
-<body class="min-h-screen">
+<body>
+    <!-- 舞台背景效果 -->
+    <div class="concert-hall"></div>
+    <div class="spotlights">
+        <div class="spotlight spotlight-1"></div>
+        <div class="spotlight spotlight-2"></div>
+        <div class="spotlight spotlight-3"></div>
+    </div>
+    <div class="stage-texture"></div>
+    
+    <!-- 音符裝飾 -->
+    <div class="music-note note-1">♪</div>
+    <div class="music-note note-2">♫</div>
+    <div class="music-note note-3">♩</div>
+    
     <div class="container mx-auto px-4 py-8 max-w-3xl">
-        <h1 class="text-3xl font-bold mb-6 text-center">指揮家遊戲：節拍大師</h1>
+        <h1 class="text-3xl font-bold mb-6 text-center text-conductor-gold">交響樂指揮家</h1>
 
         <!-- 遊戲狀態視窗 -->
-        <div id="game-container" class="relative mb-8 p-6 rounded-lg bg-gray-100 dark:bg-gray-800 shadow-md card">
+        <div id="game-container" class="relative mb-8 p-6 rounded-lg shadow-lg conductor-stage">
+            <!-- 絲絨窗簾裝飾 -->
+            <div class="velvet-curtain"></div>
+            
+            <!-- 舞台燈光效果 -->
+            <div class="stage-lighting" id="stage-lighting">
+                <div class="lighting-beam beam-1"></div>
+                <div class="lighting-beam beam-2"></div>
+                <div class="lighting-beam beam-3"></div>
+            </div>
+            
+            <!-- 旋律波浪效果 -->
+            <div class="melody-wave" id="melody-wave"></div>
+            
             <!-- 標題與連接按鈕區域 -->
             <div class="flex justify-between items-start mb-6">
                 <div>
-                    <h2 class="text-xl font-semibold mb-2">歡迎使用指揮家遊戲</h2>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">選擇音樂並開始您的指揮之旅</p>
+                    <h2 class="text-xl font-semibold mb-2 text-conductor-gold">歡迎進入交響樂殿堂</h2>
+                    <p class="text-sm text-gray-400">指揮您的音樂之旅</p>
                 </div>
                 <div id="connection-panel" class="text-right">
-                    <button id="connect-button" class="bg-primary hover:bg-opacity-80 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition">
-                        連接 Micro:bit
+                    <button id="connect-button" class="elegant-button">
+                        連接指揮棒
                     </button>
                     <div id="connection-status" class="mt-2 text-sm font-medium">未連接</div>
                 </div>
             </div>
+            
+            <div class="gold-divider"></div>
 
             <!-- 遊戲準備區塊 -->
-            <div id="setup-panel" class="hidden mb-6 pb-6 border-b border-gray-300 dark:border-gray-700">
-                <h2 class="text-xl font-semibold mb-4">選擇曲目</h2>
+            <div id="setup-panel" class="hidden mb-6 pb-6">
+                <h2 class="text-xl font-semibold mb-4 text-conductor-gold">選擇樂章</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <select id="music-select" class="w-full py-2 px-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 rounded text-base focus:outline-none focus:ring-2 focus:ring-primary">
-                        <option value="game_start">遊戲開始音樂</option>
-                        <option value="waltz">華爾滋舞曲 - 藍色多瑙河（目標 BPM: 60）</option>
-                        <option value="march">進行曲 - 拉德斯基進行曲（目標 BPM: 108）</option>
-                        <option value="symphony">交響曲 - 貝多芬第五交響曲（目標 BPM: 88）</option>
+                    <select id="music-select" class="w-full py-2 px-3 border border-conductor-gold bg-conductor-dark text-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-conductor-gold/50">
+                        <option value="game_start">序曲：舞台準備</option>
+                        <option value="waltz">華爾滋：藍色多瑙河（目標 BPM: 60）</option>
+                        <option value="march">進行曲：拉德斯基（目標 BPM: 108）</option>
+                        <option value="symphony">交響曲：命運之門（目標 BPM: 88）</option>
                     </select>
-                    <div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                        BPM計算: 平均值計算，信號節流: 420ms
+                    <div class="mt-2 text-xs text-gray-400">
+                        計算方式：平均節拍法 | 靈敏度調整：420ms
                     </div>
-                    <button id="start-game-button" class="bg-success hover:bg-opacity-80 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-success focus:ring-opacity-50 transition">
-                        開始遊戲
+                    <button id="start-game-button" class="elegant-button">
+                        開始指揮
                     </button>
                 </div>
-                <div class="text-sm text-gray-600 dark:text-gray-400">
-                    遊戲說明：聆聽音樂，使用您的 Micro:bit 指揮棒打拍子，嘗試保持音樂的節奏！
+                <div class="text-sm text-gray-400">
+                    藝術指南：感受樂曲節奏，揮動您的指揮棒，展現您的音樂領導力
                 </div>
             </div>
 
             <!-- 遊戲進行區塊 -->
             <div id="game-panel" class="hidden">
                 <!-- 指揮動畫 -->
-                <div class="flex justify-center items-center mb-6">
-                    <div id="conductor-animation" class="relative h-48 w-48 flex justify-center items-center">
+                <div class="flex justify-center items-center mb-8">
+                    <div id="conductor-animation" class="relative h-56 w-56 flex justify-center items-center podium p-4 rounded-full">
                         <!-- 指揮家圖示 -->
                         <div class="absolute bottom-0 w-full flex justify-center">
-                            <div class="relative w-20 h-20 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
-                                <div class="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-800 dark:text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            <div class="relative w-24 h-24 rounded-full bg-conductor-dark flex items-center justify-center border border-conductor-gold/20 shadow-xl">
+                                <div class="w-20 h-20 rounded-full bg-conductor-medium flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-conductor-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
                                 </div>
                                 <!-- 指揮棒 -->
-                                <div id="conductor-wand" class="conductor-wand absolute h-24 w-2 bg-gray-800 dark:bg-gray-200 rounded-full" style="bottom: 50%; transform: rotate(-10deg);">
-                                    <div class="absolute top-0 left-0 right-0 h-4 rounded-full bg-white dark:bg-gray-300"></div>
+                                <div id="conductor-wand" class="conductor-wand absolute h-28 w-1.5 bg-conductor-gold/90 rounded-full" style="bottom: 50%; transform: rotate(-10deg);">
+                                    <div class="absolute top-0 left-0 right-0 h-4 rounded-full bg-white/80"></div>
+                                    <div class="wand-highlight"></div>
                                 </div>
                             </div>
                         </div>
@@ -180,13 +568,13 @@
 
                 <!-- 遊戲狀態信息 -->
                 <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="p-4 rounded-lg bg-white dark:bg-gray-900 shadow text-center">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">當前 BPM</div>
-                        <div id="current-bpm" class="text-3xl font-bold text-primary">--</div>
+                    <div class="p-4 rounded-lg bg-conductor-medium border border-conductor-gold/10 shadow text-center reactive-indicator">
+                        <div class="text-sm text-gray-400 mb-1">您的節奏</div>
+                        <div id="current-bpm" class="text-3xl font-bold text-conductor-gold">--</div>
                     </div>
-                    <div class="p-4 rounded-lg bg-white dark:bg-gray-900 shadow text-center">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">目標 BPM</div>
-                        <div id="target-bpm" class="text-3xl font-bold text-success">--</div>
+                    <div class="p-4 rounded-lg bg-conductor-medium border border-conductor-gold/10 shadow text-center reactive-indicator">
+                        <div class="text-sm text-gray-400 mb-1">樂曲節奏</div>
+                        <div id="target-bpm" class="text-3xl font-bold text-green-400">--</div>
                     </div>
                 </div>
                 
@@ -197,84 +585,101 @@
 
                 <!-- BPM 差異指示器 -->
                 <div class="mb-6">
-                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">BPM 差異：<span id="bpm-diff">--</span></div>
-                    <div class="relative h-8 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div class="text-sm text-gray-400 mb-2">節奏偏差：<span id="bpm-diff" class="text-conductor-gold">--</span></div>
+                    <div class="relative h-8 bg-conductor-dark/70 rounded-full overflow-hidden border border-conductor-gold/10">
                         <div class="absolute inset-0 flex items-center justify-center">
-                            <div class="w-px h-full bg-gray-500 dark:bg-gray-400"></div>
+                            <div class="w-px h-full bg-conductor-gold/30"></div>
                         </div>
-                        <div id="bpm-indicator" class="bpm-indicator absolute top-0 bottom-0 w-6 h-6 bg-primary rounded-full transform -translate-x-1/2" style="left: 50%;"></div>
+                        <div id="bpm-indicator" class="bpm-indicator absolute top-0 bottom-0 w-6 h-6 bg-conductor-gold rounded-full transform -translate-x-1/2 shadow-lg shadow-conductor-gold/20" style="left: 50%;">
+                            <div class="absolute inset-0 rounded-full bg-conductor-gold/20 animate-pulse"></div>
+                        </div>
                     </div>
-                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        <span>太慢</span>
-                        <span>精準</span>
-                        <span>太快</span>
+                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>過慢</span>
+                        <span>完美</span>
+                        <span>過快</span>
                     </div>
                 </div>
 
                 <!-- 練習模式提示 -->
-                <div id="practice-mode-banner" class="hidden mb-6 py-3 px-4 rounded-lg bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-center">
-                    <div class="text-lg font-semibold mb-1">練習模式 <span id="practice-countdown">10</span> 秒</div>
-                    <div class="text-sm">請跟著音樂節奏打拍子，學習掌握正確的 BPM，此階段不計分</div>
+                <div id="practice-mode-banner" class="hidden mb-6 py-3 px-4 rounded-lg bg-conductor-dark border border-conductor-gold/20 text-center">
+                    <div class="text-lg font-semibold mb-1 text-conductor-gold"><span id="practice-countdown">10</span> 秒預備時間</div>
+                    <div class="text-sm text-gray-400">請感受音樂節奏，掌握樂曲情感，此階段為熱身</div>
                 </div>
 
                 <!-- 精準度 -->
                 <div class="mb-6">
-                    <div class="text-sm font-medium mb-1">精準度：<span id="accuracy-percent">0%</span></div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
-                        <div id="accuracy-bar" class="bg-primary h-2.5 rounded-full w-0 transition-all duration-300"></div>
+                    <div class="flex justify-between text-sm font-medium mb-2">
+                        <span>指揮精準度</span>
+                        <span id="accuracy-percent" class="text-conductor-gold">0%</span>
+                    </div>
+                    <div class="accuracy-bar-container h-3 rounded-full">
+                        <div id="accuracy-bar" class="accuracy-bar h-full w-0"></div>
                     </div>
                     <div id="accuracy-text" class="accuracy-text text-center py-2 font-medium text-lg transition-colors"></div>
                 </div>
 
                 <!-- 進度條 -->
-                <div class="mb-4">
+                <div class="mb-6">
                     <div class="flex justify-between text-sm mb-1">
-                        <div>進度</div>
-                        <div id="time-display">00:00 / 00:00</div>
+                        <div>樂章進度</div>
+                        <div id="time-display" class="text-conductor-gold/80">00:00 / 00:00</div>
                     </div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                        <div id="progress-bar" class="bg-primary h-2.5 rounded-full w-0 transition-all duration-300"></div>
+                    <div class="w-full bg-conductor-dark/70 rounded-full h-2 overflow-hidden border border-conductor-gold/10">
+                        <div id="progress-bar" class="bg-gradient-to-r from-conductor-gold/60 to-conductor-gold/80 h-2 rounded-full w-0 relative">
+                            <div class="absolute inset-0 opacity-75 bg-conductor-gold/20 animate-pulse"></div>
+                        </div>
                     </div>
+                </div>
+
+                <!-- 鍵盤指示器 -->
+                <div class="keyboard-indicator mb-4">
+                    <div class="key">空格</div>
+                    <span class="text-gray-400 flex items-center mx-2">或</span>
+                    <div class="key">↑</div>
+                    <span class="text-gray-400 flex items-center mx-2">指揮棒</span>
                 </div>
 
                 <!-- 控制按鈕 -->
                 <div class="flex justify-center mt-6">
-                    <button id="stop-game-button" class="bg-danger hover:bg-opacity-80 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-danger focus:ring-opacity-50 transition">
-                        結束遊戲
+                    <button id="stop-game-button" class="elegant-button bg-conductor-velvet/20 border-conductor-velvet/30 text-rose-300/90">
+                        結束演出
                     </button>
                 </div>
             </div>
 
             <!-- 遊戲結果區塊 -->
             <div id="result-panel" class="hidden">
-                <h2 class="text-xl font-semibold mb-4 text-center">遊戲結果</h2>
-                <div class="p-6 rounded-lg bg-white dark:bg-gray-900 shadow-md text-center mb-6">
-                    <div id="result-title" class="text-2xl font-bold mb-4">精準指揮家！</div>
-                    <div id="result-score" class="text-4xl font-bold text-primary mb-6">96%</div>
-                    <div id="result-details" class="grid grid-cols-2 gap-4 mb-6 max-w-sm mx-auto">
+                <h2 class="text-xl font-semibold mb-4 text-center text-conductor-gold">指揮表現評估</h2>
+                <div class="p-6 rounded-lg bg-conductor-medium/70 border border-conductor-gold/20 shadow-lg mb-6">
+                    <div id="result-title" class="text-2xl font-bold mb-4 text-center text-conductor-gold">精湛指揮！</div>
+                    <div id="result-score" class="text-5xl font-bold text-conductor-gold mb-6 text-center">96%</div>
+                    <div class="gold-divider"></div>
+                    <div id="result-details" class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6 max-w-sm mx-auto">
                         <div class="text-left">
-                            <div class="text-sm text-gray-500 dark:text-gray-400">目標 BPM</div>
-                            <div id="result-target-bpm" class="text-lg font-medium">60</div>
+                            <div class="text-sm text-gray-400">樂曲節奏</div>
+                            <div id="result-target-bpm" class="text-lg font-medium text-conductor-gold/90">60</div>
                         </div>
                         <div class="text-left">
-                            <div class="text-sm text-gray-500 dark:text-gray-400">平均 BPM</div>
-                            <div id="result-average-bpm" class="text-lg font-medium">62</div>
+                            <div class="text-sm text-gray-400">平均節奏</div>
+                            <div id="result-average-bpm" class="text-lg font-medium text-conductor-gold/90">62</div>
                         </div>
                         <div class="text-left">
-                            <div class="text-sm text-gray-500 dark:text-gray-400">精準節拍次數</div>
-                            <div id="result-accurate-beats" class="text-lg font-medium">45</div>
+                            <div class="text-sm text-gray-400">精確指揮</div>
+                            <div id="result-accurate-beats" class="text-lg font-medium text-conductor-gold/90">45</div>
                         </div>
                         <div class="text-left">
-                            <div class="text-sm text-gray-500 dark:text-gray-400">總節拍次數</div>
-                            <div id="result-total-beats" class="text-lg font-medium">48</div>
+                            <div class="text-sm text-gray-400">總指揮次數</div>
+                            <div id="result-total-beats" class="text-lg font-medium text-conductor-gold/90">48</div>
                         </div>
                     </div>
-                    <div id="result-comment" class="text-gray-600 dark:text-gray-400 mb-6">
-                        您展現了出色的指揮技巧，持續保持穩定的節奏！
+                    <div class="gold-divider"></div>
+                    <div id="result-comment" class="text-gray-300 mb-6 italic text-center">
+                        您展現了卓越的藝術天賦，音樂在您的指揮下栩栩如生！
                     </div>
                     <div class="flex justify-center">
-                        <button id="play-again-button" class="bg-primary hover:bg-opacity-80 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 transition">
-                            再玩一次
+                        <button id="play-again-button" class="elegant-button">
+                            再次指揮
                         </button>
                     </div>
                 </div>
@@ -288,49 +693,6 @@
     </div>
 
     <script>
-        // 檢測深色模式偏好
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.classList.add('dark');
-        }
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-            if (event.matches) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        });
-
-        // 音樂資源設定
-        const MUSIC_RESOURCES = {
-            game_start: {
-                url: 'https://cdn.jsdelivr.net/gh/iGitScor/Music-samples/wav/bubbles.wav',
-                duration: 10,
-                bpm: 0, // 非遊戲音樂
-                title: '遊戲開始音樂'
-            },
-            waltz: {
-                url: './audio/TheBlueDanube.mp3',
-                duration: 30,
-                bpm: 60,
-                title: '華爾滋舞曲 - 藍色多瑙河',
-                comment: '穩定的三拍子節奏，慢速優雅的舞曲風格'
-            },
-            march: {
-                url: 'https://cdn.jsdelivr.net/gh/iGitScor/Music-samples/wav/littleidea.wav',
-                duration: 30,
-                bpm: 108,
-                title: '進行曲 - 拉德斯基進行曲',
-                comment: '活力充沛的二拍子節奏，適合行進和頒獎典禮'
-            },
-            symphony: {
-                url: 'https://cdn.jsdelivr.net/gh/iGitScor/Music-samples/wav/ukulele.wav',
-                duration: 30,
-                bpm: 88,
-                title: '交響曲 - 貝多芬第五交響曲',
-                comment: '雄偉的四拍子節奏，著名的"命運之門"動機'
-            }
-        };
-
         // 全局變數
         let port;
         let reader;
@@ -369,6 +731,42 @@
         };
         let accuracyTimeoutId = null;
         let speedNotificationTimeoutId = null;
+        
+        // 舞台燈光和視覺效果
+        let stageLighting = document.getElementById('stage-lighting');
+        let melodyWave = document.getElementById('melody-wave');
+        let isLightingActive = false;
+
+        // 音樂資源設定
+        const MUSIC_RESOURCES = {
+            game_start: {
+                url: 'https://cdn.jsdelivr.net/gh/iGitScor/Music-samples/wav/bubbles.wav',
+                duration: 10,
+                bpm: 0, // 非遊戲音樂
+                title: '序曲：舞台準備'
+            },
+            waltz: {
+                url: './audio/TheBlueDanube.mp3',
+                duration: 30,
+                bpm: 60,
+                title: '華爾滋：藍色多瑙河',
+                comment: '優雅的三拍子節奏，如同在宮廷舞會旋轉的舞者'
+            },
+            march: {
+                url: 'https://cdn.jsdelivr.net/gh/iGitScor/Music-samples/wav/littleidea.wav',
+                duration: 30,
+                bpm: 108,
+                title: '進行曲：拉德斯基',
+                comment: '精神抖擻的二拍子節奏，引領樂團展現活力與力量'
+            },
+            symphony: {
+                url: 'https://cdn.jsdelivr.net/gh/iGitScor/Music-samples/wav/ukulele.wav',
+                duration: 30,
+                bpm: 88,
+                title: '交響曲：命運之門',
+                comment: '雄偉的四拍子節奏，指揮家與樂團的完美協奏'
+            }
+        };
 
         // DOM 元素
         const connectButton = document.getElementById('connect-button');
@@ -393,39 +791,84 @@
         const timeDisplay = document.getElementById('time-display');
         const conductorWand = document.getElementById('conductor-wand');
 
-        // 檢查 Web Serial API 支援
-        if (!('serial' in navigator)) {
-            connectionStatus.textContent = '您的瀏覽器不支援 Web Serial API。請使用 Chrome 或 Edge 瀏覽器。';
-            connectionStatus.classList.add('text-red-500');
-            connectButton.disabled = true;
-            connectButton.classList.add('opacity-50', 'cursor-not-allowed');
-        }
-
-        // 連接按鈕點擊事件
-        connectButton.addEventListener('click', async () => {
-            try {
-                // 請求 serial port
-                port = await navigator.serial.requestPort();
-                await port.open({ baudRate: 115200 });
-                
-                connectionStatus.textContent = '已連接 Micro:bit 指揮棒';
-                connectionStatus.classList.add('text-green-500');
-                connectButton.textContent = '已連接';
-                connectButton.classList.add('bg-green-500');
-                connectButton.disabled = true;
-                
-                // 顯示設置面板
-                setupPanel.classList.remove('hidden');
-                
-                // 開始讀取數據
-                readSerialData();
-                
-            } catch (error) {
-                console.error('連接錯誤:', error);
-                connectionStatus.textContent = '連接失敗: ' + (error.message || '未知錯誤');
-                connectionStatus.classList.add('text-red-500');
+        // 添加鍵盤控制支持
+        document.addEventListener('keydown', function(event) {
+            if (gameActive && (event.code === 'Space' || event.code === 'ArrowUp')) {
+                event.preventDefault();
+                simulateBeat();
             }
         });
+        
+        // 模擬指揮棒敲擊
+        function simulateBeat() {
+            // 節流處理
+            const now = performance.now();
+            if (now - lastSignalTime < throttleTime) {
+                return;
+            }
+            
+            isProcessing = true;
+            lastSignalTime = now;
+            
+            // 處理敲擊
+            conductorBeat();
+            
+            setTimeout(() => {
+                isProcessing = false;
+            }, 50);
+        }
+
+        // 檢查 Web Serial API 支援
+        if (!('serial' in navigator)) {
+            connectionStatus.textContent = '您的瀏覽器不支援 Micro:bit 連接。請使用鍵盤操作。';
+            connectionStatus.classList.add('text-yellow-500');
+            connectButton.textContent = '使用鍵盤模式';
+            connectButton.addEventListener('click', function() {
+                setupPanel.classList.remove('hidden');
+            });
+        } else {
+            // 連接按鈕點擊事件
+            connectButton.addEventListener('click', async () => {
+                try {
+                    // 請求 serial port
+                    port = await navigator.serial.requestPort();
+                    await port.open({ baudRate: 115200 });
+                    
+                    connectionStatus.textContent = '已連接指揮棒';
+                    connectionStatus.classList.add('text-green-400');
+                    connectButton.textContent = '連接成功';
+                    connectButton.classList.add('bg-conductor-velvet/20');
+                    connectButton.disabled = true;
+                    
+                    // 顯示設置面板
+                    setupPanel.classList.remove('hidden');
+                    
+                    // 開始讀取數據
+                    readSerialData();
+                    
+                } catch (error) {
+                    console.error('連接錯誤:', error);
+                    connectionStatus.textContent = '連接失敗，請使用鍵盤操作。';
+                    connectionStatus.classList.add('text-yellow-500');
+                    setupPanel.classList.remove('hidden');
+                }
+            });
+        }
+
+        // 啟動燈光效果
+        function activateLighting() {
+            if (!isLightingActive) {
+                stageLighting.classList.add('active');
+                isLightingActive = true;
+            }
+        }
+        
+        // 觸發旋律波浪動畫
+        function triggerMelodyWave() {
+            melodyWave.classList.remove('active');
+            void melodyWave.offsetWidth; // 觸發重排
+            melodyWave.classList.add('active');
+        }
 
         // 開始遊戲按鈕
         startGameButton.addEventListener('click', startGame);
@@ -464,16 +907,13 @@
                 if (port && port.readable) {
                     setTimeout(readSerialData, 100);
                 } else {
-                    connectionStatus.textContent = '連接已斷開';
-                    connectionStatus.classList.remove('text-green-500');
-                    connectionStatus.classList.add('text-red-500');
-                    connectButton.textContent = '重新連接';
-                    connectButton.classList.remove('bg-green-500');
-                    connectButton.disabled = false;
+                    connectionStatus.textContent = '連接已斷開，可使用鍵盤操作';
+                    connectionStatus.classList.remove('text-green-400');
+                    connectionStatus.classList.add('text-yellow-500');
                     
-                    // 如果遊戲正在進行，則結束遊戲
+                    // 如果遊戲正在進行，則繼續
                     if (gameActive) {
-                        endGame();
+                        // 不結束遊戲，讓用戶可以使用鍵盤繼續
                     }
                 }
             }
@@ -482,14 +922,12 @@
         // 處理接收到的數據
         function processData(data) {
             const text = textDecoder.decode(data).trim();
-            console.log('接收到數據:', text);
             
             // 檢查是否接收到 "b" 信號
             if (text.includes('b')) {
                 // 節流處理 - 忽略節流時間內的連續信號
                 const now = performance.now();
                 if (now - lastSignalTime < throttleTime) {
-                    console.log(`信號節流: 間隔 ${Math.round(now - lastSignalTime)}ms < ${throttleTime}ms, 忽略`);
                     return;
                 }
                 
@@ -518,6 +956,9 @@
             const musicKey = musicSelect.value;
             currentMusic = MUSIC_RESOURCES[musicKey];
             targetBpm = currentMusic.bpm;
+            
+            // 啟動燈光效果
+            activateLighting();
             
             // 不是遊戲音樂則返回選擇界面
             if (targetBpm === 0) {
@@ -605,7 +1046,7 @@
                             };
                             
                             // 顯示開始計分提示
-                            showAccuracyFeedback('開始正式計分！', 'text-success');
+                            showAccuracyFeedback('開始正式計分！', 'text-conductor-gold');
                             
                             // 重置精準度顯示
                             accuracyBar.style.width = '0%';
@@ -656,6 +1097,9 @@
             speedNotification.classList.remove('hidden');
             speedNotification.classList.add('scale-100');
             
+            // 觸發旋律波浪效果
+            triggerMelodyWave();
+            
             // 設置淡出
             speedNotificationTimeoutId = setTimeout(() => {
                 speedNotification.classList.add('scale-95', 'opacity-0');
@@ -687,11 +1131,11 @@
                 
                 // 顯示速度變化通知
                 if (newRate === FAST_PLAYBACK_RATE) {
-                    showSpeedNotification('音樂加速！您的節奏太快了', '#FF9800');
+                    showSpeedNotification('樂團加速！您的節奏過快', '#FF9800');
                 } else if (newRate === SLOW_PLAYBACK_RATE) {
-                    showSpeedNotification('音樂減速！您的節奏太慢了', '#2196F3');
+                    showSpeedNotification('樂團減速！您的節奏過慢', '#2196F3');
                 } else {
-                    showSpeedNotification('音樂恢復正常速度', '#4CAF50');
+                    showSpeedNotification('樂團跟隨您的領導，節奏恢復', '#4CAF50');
                 }
             }
         }
@@ -706,6 +1150,9 @@
             setTimeout(() => {
                 conductorWand.classList.remove('conducting');
             }, 400);
+            
+            // 觸發旋律波浪
+            triggerMelodyWave();
             
             // 記錄時間戳以計算平均 BPM
             timestamps.push(now);
@@ -729,9 +1176,9 @@
                     
                     // 更新當前 BPM 顯示
                     currentBpmDisplay.textContent = newBpm;
-                    currentBpmDisplay.classList.add('beat');
+                    currentBpmDisplay.classList.add('bpm-pulse');
                     setTimeout(() => {
-                        currentBpmDisplay.classList.remove('beat');
+                        currentBpmDisplay.classList.remove('bpm-pulse');
                     }, 500);
                     
                     // 計算與目標 BPM 的差異
@@ -739,17 +1186,22 @@
                     
                     // 更新 BPM 差異顯示
                     if (bpmDiff > 0) {
-                        bpmDiffDisplay.textContent = `+${bpmDiff} (太快)`;
+                        bpmDiffDisplay.textContent = `+${bpmDiff} (過快)`;
                     } else if (bpmDiff < 0) {
-                        bpmDiffDisplay.textContent = `${bpmDiff} (太慢)`;
+                        bpmDiffDisplay.textContent = `${bpmDiff} (過慢)`;
                     } else {
-                        bpmDiffDisplay.textContent = `精準!`;
+                        bpmDiffDisplay.textContent = `完美!`;
                     }
                     
                     // 更新 BPM 指示器位置
-                    // 從 0% (太慢) 到 100% (太快)，50% 是精準
                     const indicatorPos = Math.max(0, Math.min(100, 50 + (bpmDiff / targetBpm * 50)));
                     bpmIndicator.style.left = `${indicatorPos}%`;
+                    
+                    // BPM 指示器脈動效果
+                    bpmIndicator.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        bpmIndicator.classList.remove('animate-pulse');
+                    }, 500);
                     
                     // 調整音樂播放速度
                     adjustPlaybackRate(newBpm);
@@ -760,14 +1212,22 @@
                         gameData.totalBeats++;
                         gameData.bpmReadings.push(newBpm);
                         
+                        // 添加指揮反饋效果
+                        document.querySelectorAll('.reactive-indicator').forEach(el => {
+                            el.classList.add('active');
+                            setTimeout(() => {
+                                el.classList.remove('active');
+                            }, 300);
+                        });
+                        
                         // 更新精準度
                         if (Math.abs(bpmDiff) <= 5) {
                             gameData.accurateBeats++;
-                            showAccuracyFeedback('精準！', 'text-success');
+                            showAccuracyFeedback('精彩！完美節奏', 'text-green-400');
                         } else if (Math.abs(bpmDiff) <= 10) {
-                            showAccuracyFeedback('不錯', 'text-warning');
+                            showAccuracyFeedback('樂團跟隨您的指揮', 'text-yellow-400');
                         } else {
-                            showAccuracyFeedback('調整節奏', 'text-danger');
+                            showAccuracyFeedback('調整您的指揮節奏', 'text-red-400');
                         }
                         
                         // 計算並更新精準度百分比
@@ -777,11 +1237,11 @@
                     } else {
                         // 練習模式下的反饋
                         if (Math.abs(bpmDiff) <= 5) {
-                            showAccuracyFeedback('節奏不錯！練習中...', 'text-info');
+                            showAccuracyFeedback('感受樂曲的脈動...', 'text-blue-400');
                         } else if (Math.abs(bpmDiff) <= 10) {
-                            showAccuracyFeedback('繼續調整，接近了！', 'text-info');
+                            showAccuracyFeedback('尋找音樂的節奏...', 'text-blue-400');
                         } else {
-                            showAccuracyFeedback('嘗試調整節奏...', 'text-info');
+                            showAccuracyFeedback('熟悉樂團的呼吸...', 'text-blue-400');
                         }
                     }
                 }
@@ -859,17 +1319,17 @@
             let resultComment = '';
             
             if (accuracy >= 90) {
-                resultTitle = '一流指揮家！';
-                resultComment = '您展現了精湛的指揮技巧，節奏控制幾乎完美！';
+                resultTitle = '大師級指揮！';
+                resultComment = '您的藝術風采如暴風般席捲全場，樂團在您的指揮下綻放最璀璨的光芒！';
             } else if (accuracy >= 70) {
-                resultTitle = '優秀指揮家！';
-                resultComment = '您的指揮相當不錯，只需稍微調整節奏！';
+                resultTitle = '精湛指揮家！';
+                resultComment = '您對音樂的理解與感染力讓樂團與您心靈相通，演繹出動人的樂章！';
             } else if (accuracy >= 50) {
                 resultTitle = '有潛力的指揮家';
-                resultComment = '您有基本的節奏感，繼續練習能更好！';
+                resultComment = '您具備自然的音樂天賦，隨著經驗的累積，終將成就非凡的指揮生涯！';
             } else {
                 resultTitle = '初學指揮家';
-                resultComment = '節奏控制需要更多練習，多聆聽音樂會有所幫助！';
+                resultComment = '音樂是一段美麗的旅程，持續練習與感受，您將發現指揮的無窮樂趣！';
             }
             
             // 更新結果面板
