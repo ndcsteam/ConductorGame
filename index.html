@@ -63,9 +63,20 @@
                     <ol class="list-decimal list-inside ml-2 text-sm">
                         <li>設定 radio 分組為 1</li>
                         <li>讀取加速度計 X、Y、Z 值</li>
-                        <li>打包成 JSON 並透過 radio 發送</li>
+                        <li>使用格式: X:123,Y:456,Z:789</li>
                         <li>此裝置可用電池供電並移動</li>
                     </ol>
+                    <div class="mt-2 p-2 bg-white dark:bg-gray-950 rounded text-xs font-mono overflow-auto">
+                        radio.setGroup(1)<br>
+                        basic.forever(function() {<br>
+                        &nbsp;&nbsp;let x = input.acceleration(Dimension.X)<br>
+                        &nbsp;&nbsp;let y = input.acceleration(Dimension.Y)<br>
+                        &nbsp;&nbsp;let z = input.acceleration(Dimension.Z)<br>
+                        &nbsp;&nbsp;let data = "X:" + x + ",Y:" + y + ",Z:" + z<br>
+                        &nbsp;&nbsp;radio.sendString(data)<br>
+                        &nbsp;&nbsp;basic.pause(100)<br>
+                        })
+                    </div>
                 </div>
                 <div>
                     <h4 class="font-semibold mb-1">接收端 Micro:bit:</h4>
@@ -75,6 +86,14 @@
                         <li>通過 USB 序列傳輸轉發數據</li>
                         <li>此裝置需要連接到電腦</li>
                     </ol>
+                    <div class="mt-2 p-2 bg-white dark:bg-gray-950 rounded text-xs font-mono overflow-auto">
+                        radio.setGroup(1)<br>
+                        basic.showIcon(IconNames.Square)<br>
+                        radio.onReceivedString(function(data) {<br>
+                        &nbsp;&nbsp;serial.writeLine(data)<br>
+                        &nbsp;&nbsp;led.toggle(4, 0)<br>
+                        })
+                    </div>
                 </div>
             </div>
         </div>
@@ -156,6 +175,28 @@
                     清除記錄
                 </button>
             </div>
+        </div>
+        
+        <div class="mt-6 bg-amber-50 dark:bg-amber-950 rounded-lg p-6 shadow-md">
+            <h2 class="text-xl font-semibold mb-4 text-amber-800 dark:text-amber-200">故障排除指南</h2>
+            <ul class="space-y-2 text-amber-700 dark:text-amber-300">
+                <li class="flex items-start">
+                    <span class="inline-block w-5 h-5 bg-amber-200 dark:bg-amber-800 rounded-full text-center mr-2 flex-shrink-0">!</span>
+                    <span>如果看到 <code class="px-1 py-0.5 bg-amber-100 dark:bg-amber-900 rounded">JSON 解析錯誤</code>，請使用簡單格式的 micro:bit 程式碼（見上方指南）</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="inline-block w-5 h-5 bg-amber-200 dark:bg-amber-800 rounded-full text-center mr-2 flex-shrink-0">!</span>
+                    <span>確保兩個 micro:bit 都設定了相同的 radio 分組（程式碼中為 1）</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="inline-block w-5 h-5 bg-amber-200 dark:bg-amber-800 rounded-full text-center mr-2 flex-shrink-0">!</span>
+                    <span>接收端 micro:bit 必須先連接到電腦，再點擊「連接」按鈕</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="inline-block w-5 h-5 bg-amber-200 dark:bg-amber-800 rounded-full text-center mr-2 flex-shrink-0">!</span>
+                    <span>如果看到數據但顯示異常，請嘗試重新啟動兩個 micro:bit</span>
+                </li>
+            </ul>
         </div>
     </div>
 
@@ -253,25 +294,83 @@
             }
         });
 
-        // 處理序列數據
+        // 處理序列數據 - 增強版
         function processSerialData(line) {
             try {
                 // 更新原始數據顯示
                 rawData.textContent = line;
                 
-                // 嘗試解析JSON數據
-                const data = JSON.parse(line);
+                // 記錄接收時間
+                const now = new Date();
+                lastDataTime = now.getTime();
                 
-                // 檢查是否有X、Y、Z值
-                if ('x' in data && 'y' in data && 'z' in data) {
-                    // 更新UI
-                    updateDisplay(data.x, data.y, data.z);
-                    
-                    // 更新狀態文字
-                    const now = new Date();
-                    lastDataTime = now.getTime();
-                    statusText.textContent = `接收中 - 上次更新: ${now.toLocaleTimeString()}`;
+                // 處理數據 - 支援兩種格式:
+                
+                // 1. 嘗試解析 JSON 格式 {"x":123,"y":456,"z":789}
+                if (line.trim().startsWith('{') && line.trim().endsWith('}')) {
+                    try {
+                        const data = JSON.parse(line);
+                        if ('x' in data && 'y' in data && 'z' in data) {
+                            updateDisplay(data.x, data.y, data.z);
+                            statusText.textContent = `接收中 (JSON) - 上次更新: ${now.toLocaleTimeString()}`;
+                            return;
+                        }
+                    } catch (jsonError) {
+                        console.warn('JSON解析錯誤:', jsonError.message);
+                        // 繼續嘗試其他格式
+                    }
                 }
+                
+                // 2. 嘗試解析簡單格式 X:123,Y:456,Z:789
+                if (line.includes('X:') && line.includes('Y:') && line.includes('Z:')) {
+                    try {
+                        let x = 0, y = 0, z = 0;
+                        
+                        // 提取 X 值
+                        const xMatch = line.match(/X:(-?\d+)/);
+                        if (xMatch && xMatch[1]) {
+                            x = parseInt(xMatch[1], 10);
+                        }
+                        
+                        // 提取 Y 值
+                        const yMatch = line.match(/Y:(-?\d+)/);
+                        if (yMatch && yMatch[1]) {
+                            y = parseInt(yMatch[1], 10);
+                        }
+                        
+                        // 提取 Z 值
+                        const zMatch = line.match(/Z:(-?\d+)/);
+                        if (zMatch && zMatch[1]) {
+                            z = parseInt(zMatch[1], 10);
+                        }
+                        
+                        updateDisplay(x, y, z);
+                        statusText.textContent = `接收中 (簡單格式) - 上次更新: ${now.toLocaleTimeString()}`;
+                        return;
+                    } catch (parseError) {
+                        console.warn('格式解析錯誤:', parseError.message);
+                    }
+                }
+                
+                // 3. 嘗試從任何包含數字的字符串中提取數據
+                try {
+                    const numbers = line.match(/-?\d+/g);
+                    if (numbers && numbers.length >= 3) {
+                        const x = parseInt(numbers[0], 10);
+                        const y = parseInt(numbers[1], 10);
+                        const z = parseInt(numbers[2], 10);
+                        
+                        updateDisplay(x, y, z);
+                        statusText.textContent = `接收中 (數字序列) - 上次更新: ${now.toLocaleTimeString()}`;
+                        return;
+                    }
+                } catch (numError) {
+                    console.warn('數字提取錯誤:', numError.message);
+                }
+                
+                // 如果所有解析方法都失敗了
+                console.warn('無法識別的數據格式:', line);
+                
             } catch (e) {
                 console.error('處理數據錯誤:', e, line);
             }
