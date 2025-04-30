@@ -189,6 +189,11 @@
                         <div id="target-bpm" class="text-3xl font-bold text-success">--</div>
                     </div>
                 </div>
+                
+                <!-- 音樂速度提示 -->
+                <div id="speed-notification" class="hidden mb-6 py-2 px-4 rounded-lg text-center text-white transition-all duration-300 transform scale-100">
+                    <span id="speed-text">音樂速度已調整</span>
+                </div>
 
                 <!-- BPM 差異指示器 -->
                 <div class="mb-6">
@@ -353,12 +358,17 @@
         let isPracticeMode = true; // 初始為練習模式
         let practiceEndTime = 0; // 練習模式結束時間
         const PRACTICE_DURATION = 10; // 練習模式持續10秒
+        let currentPlaybackRate = 1.0; // 當前音樂播放速度
+        const FAST_PLAYBACK_RATE = 1.15; // 快速播放速度
+        const SLOW_PLAYBACK_RATE = 0.85; // 慢速播放速度
+        const BPM_THRESHOLD = 0.15; // BPM變化閾值 (15%)
         let gameData = {
             totalBeats: 0,
             accurateBeats: 0, // BPM差異 < 5 的準確節拍
             bpmReadings: []
         };
         let accuracyTimeoutId = null;
+        let speedNotificationTimeoutId = null;
 
         // DOM 元素
         const connectButton = document.getElementById('connect-button');
@@ -628,6 +638,64 @@
             return Math.round(60000 / averageInterval);
         }
         
+        // 顯示音樂速度提示
+        function showSpeedNotification(text, bgColor) {
+            const speedNotification = document.getElementById('speed-notification');
+            const speedText = document.getElementById('speed-text');
+            
+            // 清除之前的 timeout
+            if (speedNotificationTimeoutId) {
+                clearTimeout(speedNotificationTimeoutId);
+            }
+            
+            // 更新文字和背景色
+            speedText.textContent = text;
+            speedNotification.style.backgroundColor = bgColor;
+            
+            // 顯示通知
+            speedNotification.classList.remove('hidden');
+            speedNotification.classList.add('scale-100');
+            
+            // 設置淡出
+            speedNotificationTimeoutId = setTimeout(() => {
+                speedNotification.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    speedNotification.classList.add('hidden');
+                    speedNotification.classList.remove('scale-95', 'opacity-0');
+                }, 300);
+            }, 2000);
+        }
+        
+        // 調整音樂播放速度
+        function adjustPlaybackRate(newBpm) {
+            if (!gameAudio || isPracticeMode) return;
+            
+            let newRate = 1.0;
+            
+            // 根據 BPM 差異調整播放速度
+            if (newBpm > targetBpm * (1 + BPM_THRESHOLD)) {
+                newRate = FAST_PLAYBACK_RATE;
+            } else if (newBpm < targetBpm * (1 - BPM_THRESHOLD)) {
+                newRate = SLOW_PLAYBACK_RATE;
+            }
+            
+            // 只有當速度改變時才更新
+            if (newRate !== currentPlaybackRate) {
+                // 更新播放速度
+                gameAudio.playbackRate = newRate;
+                currentPlaybackRate = newRate;
+                
+                // 顯示速度變化通知
+                if (newRate === FAST_PLAYBACK_RATE) {
+                    showSpeedNotification('音樂加速！您的節奏太快了', '#FF9800');
+                } else if (newRate === SLOW_PLAYBACK_RATE) {
+                    showSpeedNotification('音樂減速！您的節奏太慢了', '#2196F3');
+                } else {
+                    showSpeedNotification('音樂恢復正常速度', '#4CAF50');
+                }
+            }
+        }
+        
         // 指揮動作
         function conductorBeat() {
             accelerationCount++;
@@ -682,6 +750,9 @@
                     // 從 0% (太慢) 到 100% (太快)，50% 是精準
                     const indicatorPos = Math.max(0, Math.min(100, 50 + (bpmDiff / targetBpm * 50)));
                     bpmIndicator.style.left = `${indicatorPos}%`;
+                    
+                    // 調整音樂播放速度
+                    adjustPlaybackRate(newBpm);
                     
                     // 只有在非練習模式下才更新計分
                     if (!isPracticeMode) {
