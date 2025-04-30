@@ -677,11 +677,8 @@
                     <h2 class="text-xl font-semibold mb-2 text-conductor-gold">歡迎進入交響樂殿堂</h2>
                     <p class="text-sm text-gray-400">指揮您的音樂之旅</p>
                 </div>
-                <div id="connection-panel" class="text-right">
-                    <button id="connect-button" class="elegant-button">
-                        連接指揮棒
-                    </button>
-                    <div id="connection-status" class="mt-2 text-sm font-medium">未連接</div>
+                <div id="connection-panel" class="text-right hidden">
+                    <div id="connection-status" class="text-sm font-medium">使用鍵盤空格鍵或上箭頭進行指揮</div>
                 </div>
             </div>
             
@@ -869,13 +866,42 @@
             // 生成動態音符
             createDynamicMusicNotes();
             
-            // 頁面切換事件
-            startGameButton.addEventListener('click', function() {
+            // 整合頁面切換與遊戲設置
+            startGameButton.addEventListener('click', async function() {
                 coverPage.classList.add('page-hidden');
                 // 清除音符生成
                 cleanupMusicNotes();
-                setTimeout(() => {
+                
+                setTimeout(async () => {
                     mainContent.classList.remove('page-hidden');
+                    
+                    // 直接顯示遊戲設置面板，跳過連接步驟
+                    connectionPanel.classList.add('hidden');
+                    setupPanel.classList.remove('hidden');
+                    
+                    // 使用默認的鍵盤模式提示
+                    connectionStatus.textContent = '使用鍵盤空格鍵或上箭頭進行指揮';
+                    connectionStatus.classList.add('text-yellow-500');
+                    
+                    // 如果支援Web Serial API，嘗試連接
+                    if ('serial' in navigator) {
+                        try {
+                            // 請求 serial port
+                            port = await navigator.serial.requestPort();
+                            await port.open({ baudRate: 115200 });
+                            
+                            // 連接成功提示
+                            connectionStatus.textContent = '已連接指揮棒！';
+                            connectionStatus.classList.remove('text-yellow-500');
+                            connectionStatus.classList.add('text-green-400');
+                            
+                            // 開始讀取數據
+                            readSerialData();
+                        } catch (error) {
+                            console.log('使用鍵盤模式：', error);
+                            // 如果連接失敗，維持鍵盤模式，不做特殊處理
+                        }
+                    }
                 }, 400);
             });
             
