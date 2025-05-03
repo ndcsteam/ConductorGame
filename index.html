@@ -39,6 +39,7 @@
                         'conductor': 'conductor 1s ease-in-out infinite',
                         'float-slow': 'float 20s ease-in-out infinite',
                         'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'pendulum': 'pendulum 1s ease-in-out infinite',
                     },
                     keyframes: {
                         spotlight: {
@@ -69,6 +70,11 @@
                         pulse: {
                             '0%, 100%': { opacity: 1 },
                             '50%': { opacity: 0.7 },
+                        },
+                        pendulum: {
+                            '0%': { transform: 'rotate(-30deg)' },
+                            '50%': { transform: 'rotate(30deg)' },
+                            '100%': { transform: 'rotate(-30deg)' },
                         }
                     },
                     backgroundImage: {
@@ -611,6 +617,147 @@
         .conductor-icon:hover .conductor-wand {
             animation: conducting 1.5s ease-in-out infinite;
         }
+        
+        /* 節拍器樣式 */
+        .metronome-container {
+            position: relative;
+            width: 100px;
+            height: 160px;
+            margin: 0 auto;
+        }
+        
+        .metronome-base {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background: linear-gradient(to bottom, #5d4037, #3e2723);
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            z-index: 1;
+        }
+        
+        .metronome-body {
+            position: absolute;
+            bottom: 40px;
+            left: 10px;
+            width: 80px;
+            height: 100px;
+            background: linear-gradient(135deg, #964B00, #8B4513);
+            border-radius: 6px 6px 0 0;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
+            z-index: 1;
+        }
+        
+        .metronome-pendulum {
+            position: absolute;
+            width: 4px;
+            height: 100px;
+            background: #d4af37;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%) rotate(0deg);
+            transform-origin: bottom center;
+            z-index: 2;
+        }
+        
+        .metronome-weight {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #d4af37;
+            border-radius: 50%;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+        
+        .metronome-tick {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: rgba(212, 175, 55, 0.3);
+            z-index: 0;
+        }
+        
+        .metronome-tick:nth-child(1) {
+            transform: rotate(-30deg);
+            top: 20px;
+        }
+        
+        .metronome-tick:nth-child(2) {
+            top: 50px;
+        }
+        
+        .metronome-tick:nth-child(3) {
+            transform: rotate(30deg);
+            top: 20px;
+        }
+        
+        .metronome-pendulum.active {
+            animation: pendulum var(--duration) ease-in-out infinite;
+        }
+        
+        @keyframes pendulum {
+            0% { transform: translateX(-50%) rotate(-30deg); }
+            50% { transform: translateX(-50%) rotate(30deg); }
+            100% { transform: translateX(-50%) rotate(-30deg); }
+        }
+        
+        /* BPM 範例區域 */
+        .bpm-example {
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            margin: 8px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .bpm-example:hover {
+            border-color: rgba(212, 175, 55, 0.4);
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .bpm-example-title {
+            font-weight: 500;
+            color: rgba(212, 175, 55, 0.9);
+            margin-bottom: 4px;
+        }
+        
+        /* 節拍器音頻視覺化 */
+        .audio-wave {
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            margin: 10px 0;
+        }
+        
+        .wave-bar {
+            width: 3px;
+            height: 5px;
+            background: rgba(212, 175, 55, 0.3);
+            border-radius: 1px;
+            transition: height 0.1s ease;
+        }
+        
+        .wave-bar.active {
+            height: 24px;
+            background: rgba(212, 175, 55, 0.9);
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+            animation: pulse-bar 0.3s ease-out;
+        }
+        
+        @keyframes pulse-bar {
+            0% { height: 5px; }
+            50% { height: 24px; }
+            100% { height: 16px; }
+        }
     </style>
 </head>
 <body>
@@ -689,6 +836,7 @@
                 <h2 class="text-xl font-semibold mb-4 text-conductor-gold">選擇樂章</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <select id="music-select" class="w-full py-2 px-3 border border-conductor-gold bg-conductor-dark text-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-conductor-gold/50">
+                        <option value="tutorial">教學模式：節拍感受（60-120 BPM）</option>
                         <option value="game_start">序曲：舞台準備</option>
                         <option value="waltz">華爾滋：藍色多瑙河（目標 BPM: 60）</option>
                         <option value="march">進行曲：拉德斯基（目標 BPM: 108）</option>
@@ -838,8 +986,111 @@
                 </div>
             </div>
 
+            <!-- 教學模式面板 -->
+            <div id="tutorial-panel" class="hidden">
+                <h2 class="text-xl font-semibold mb-4 text-conductor-gold">節拍感受訓練</h2>
+                
+                <!-- 節拍器視覺化 -->
+                <div class="flex justify-center items-center mb-6">
+                    <div class="metronome-container">
+                        <div class="metronome-base"></div>
+                        <div class="metronome-body">
+                            <div class="metronome-tick"></div>
+                            <div class="metronome-tick"></div>
+                            <div class="metronome-tick"></div>
+                        </div>
+                        <div id="metronome-pendulum" class="metronome-pendulum">
+                            <div class="metronome-weight"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 音頻視覺化 -->
+                <div class="audio-wave" id="audio-wave">
+                    <!-- 聲音波形會被JS動態生成 -->
+                </div>
+                
+                <!-- BPM控制器 -->
+                <div class="mb-6">
+                    <div class="flex justify-between mb-2">
+                        <label for="bpm-slider" class="text-sm text-gray-300">BPM (每分鐘拍子數):</label>
+                        <span id="bpm-value" class="text-conductor-gold font-bold">80</span>
+                    </div>
+                    <input type="range" id="bpm-slider" min="60" max="120" value="80" step="1" 
+                           class="w-full h-2 bg-conductor-dark rounded-lg appearance-none cursor-pointer accent-conductor-gold">
+                    
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>慢 (60)</span>
+                        <span>中等 (90)</span>
+                        <span>快 (120)</span>
+                    </div>
+                </div>
+                
+                <!-- 節拍器控制按鈕 -->
+                <div class="flex justify-center gap-4 mb-6">
+                    <button id="start-metronome" class="elegant-button px-5 py-2">
+                        <span id="metronome-toggle-text">開始</span>
+                    </button>
+                    <button id="tap-tempo" class="elegant-button px-5 py-2">
+                        點擊測量BPM
+                    </button>
+                </div>
+                
+                <div class="gold-divider my-6"></div>
+                
+                <!-- BPM 參考範例 -->
+                <h3 class="text-lg font-medium mb-3 text-conductor-gold">常見音樂節奏參考</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bpm-example" data-bpm="60">
+                        <div class="bpm-example-title">60 BPM - 慢板</div>
+                        <div class="text-xs text-gray-300">每秒一拍，如慢板華爾滋</div>
+                    </div>
+                    
+                    <div class="bpm-example" data-bpm="76">
+                        <div class="bpm-example-title">76 BPM - 行板</div>
+                        <div class="text-xs text-gray-300">適合優雅漫步的速度</div>
+                    </div>
+                    
+                    <div class="bpm-example" data-bpm="92">
+                        <div class="bpm-example-title">92 BPM - 中板</div>
+                        <div class="text-xs text-gray-300">中等速度，節奏明確</div>
+                    </div>
+                    
+                    <div class="bpm-example" data-bpm="108">
+                        <div class="bpm-example-title">108 BPM - 小快板</div>
+                        <div class="text-xs text-gray-300">如《拉德斯基進行曲》</div>
+                    </div>
+                    
+                    <div class="bpm-example" data-bpm="120">
+                        <div class="bpm-example-title">120 BPM - 快板</div>
+                        <div class="text-xs text-gray-300">活潑有力的節奏</div>
+                    </div>
+                </div>
+                
+                <!-- 指揮提示 -->
+                <div class="mt-6 p-4 bg-conductor-dark/50 rounded-lg border border-conductor-gold/10">
+                    <h4 class="font-medium mb-2 text-conductor-gold">指揮技巧</h4>
+                    <ul class="text-sm text-gray-300 space-y-2">
+                        <li>• 以節奏器為基準，練習精確的指揮動作</li>
+                        <li>• 慢速節奏(60-80 BPM)：動作幅度較大，更具表現力</li>
+                        <li>• 中速節奏(80-100 BPM)：保持穩定的手勢</li>
+                        <li>• 快速節奏(100-120 BPM)：動作簡潔有力</li>
+                        <li>• 點擊「開始指揮」體驗不同樂曲的節奏感</li>
+                    </ul>
+                </div>
+                
+                <!-- 返回按鈕 -->
+                <div class="flex justify-center mt-6">
+                    <button id="exit-tutorial" class="elegant-button">
+                        返回選曲
+                    </button>
+                </div>
+            </div>
+
             <!-- 音樂播放器（隱藏） -->
             <audio id="game-audio" class="hidden"></audio>
+            <audio id="metronome-audio" class="hidden"></audio>
         </div>
 
 
@@ -1077,6 +1328,13 @@
         let accuracyTimeoutId = null;
         let speedNotificationTimeoutId = null;
         
+        // 節拍器相關變數
+        let metronomeActive = false;
+        let metronomeInterval = null;
+        let currentMetronomeBpm = 80;
+        let metronomeAudio = document.getElementById('metronome-audio');
+        let tapTempoTimestamps = [];
+        
         // 舞台燈光和視覺效果
         let stageLighting = document.getElementById('stage-lighting');
         let melodyWave = document.getElementById('melody-wave');
@@ -1084,6 +1342,12 @@
 
         // 音樂資源設定
         const MUSIC_RESOURCES = {
+            tutorial: {
+                url: null, // 教學模式沒有音樂URL
+                duration: 0,
+                bpm: 0, // 可調整的BPM
+                title: '教學模式：節拍感受'
+            },
             game_start: {
                 url: 'https://cdn.jsdelivr.net/gh/iGitScor/Music-samples/wav/bubbles.wav',
                 duration: 10,
@@ -1119,6 +1383,7 @@
         const setupPanel = document.getElementById('setup-panel');
         const gamePanel = document.getElementById('game-panel');
         const resultPanel = document.getElementById('result-panel');
+        const tutorialPanel = document.getElementById('tutorial-panel');
         const musicSelect = document.getElementById('music-select');
         const startMusicButton = document.getElementById('start-music-button');
         const stopGameButton = document.getElementById('stop-game-button');
@@ -1133,8 +1398,190 @@
         const accuracyText = document.getElementById('accuracy-text');
         const progressBar = document.getElementById('progress-bar');
         const timeDisplay = document.getElementById('time-display');
-        // 移除不再需要的變數
-        // const conductorWand = document.getElementById('conductor-wand');
+
+        // 節拍器元素
+        const bpmSlider = document.getElementById('bpm-slider');
+        const bpmValue = document.getElementById('bpm-value');
+        const startMetronomeButton = document.getElementById('start-metronome');
+        const metronomeToggleText = document.getElementById('metronome-toggle-text');
+        const tapTempoButton = document.getElementById('tap-tempo');
+        const metronomeAudioElement = document.getElementById('metronome-audio'); 
+        const metronomeTickSound = new Audio('data:audio/wav;base64,UklGRo4DAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0Yb4CAACBgIF/gn2Cf4GBgIB/gH9/gH6AfX9+f4CAf4B+gH2Af3+Af4B+f4B/gH+AgH+Af4B+gIB/gH5/f3+AgH9/f3+AgICAgH9/f4CAgICAf39/gICAgICAf39/gICAgICAf39/gICAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gICAf4CAf4CAgH+AgH+AgIB/gH+AgIB/gIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/f4CAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gIGAgH5/gYGAgX5+gYGBgn5+gYGBgn5+gYGBgn19gYGCg319gIGCg319gIGCg319gIGCg318gIGDhH18gICDhH18f4CDhH18f4CDhH18f4CDhH18f4CDhH59f4CDhH59f4CDhIB9fn+DhIB9fn+EhYF9fX+EhYF9fX+EhYF9fX+EhYJ+fH6EhoN/fH2DhoSAfHyChYSBfXyChYSBfXyChYSBfXyChISCfn2ChISCfn2ChISCfn2ChISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn6BhIOCfn6BhIOCfn+BhIOCfn+BhIOCfn+BhIKCf3+AhIKCf4CAg4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+AgoKCgICAgoKCgICAgoKCgICAgoKCgICAgoKCgICAgYODgYF/gIKDgoF/gIKDgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgH+CgoOBgH9+');
+        const metronomeTickAudio = new Audio('data:audio/wav;base64,UklGRo4DAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0Yb4CAACBgIF/gn2Cf4GBgIB/gH9/gH6AfX9+f4CAf4B+gH2Af3+Af4B+f4B/gH+AgH+Af4B+gIB/gH5/f3+AgH9/f3+AgICAgH9/f4CAgICAf39/gICAgICAf39/gICAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gICAf4CAf4CAgH+AgH+AgIB/gH+AgIB/gIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/f4CAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gIGAgH5/gYGAgX5+gYGBgn5+gYGBgn5+gYGBgn19gYGCg319gIGCg319gIGCg319gIGCg318gIGDhH18gICDhH18f4CDhH18f4CDhH18f4CDhH18f4CDhH59f4CDhH59f4CDhIB9fn+DhIB9fn+EhYF9fX+EhYF9fX+EhYF9fX+EhYJ+fH6EhoN/fH2DhoSAfHyChYSBfXyChYSBfXyChYSBfXyChISCfn2ChISCfn2ChISCfn2ChISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn6BhIOCfn6BhIOCfn+BhIOCfn+BhIOCfn+BhIKCf3+AhIKCf4CAg4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+AgoKCgICAgoKCgICAgoKCgICAgoKCgICAgoKCgICAgYODgYF/gIKDgoF/gIKDgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgH+CgoOBgH9+');
+        const exitTutorialButton = document.getElementById('exit-tutorial');
+        const metronomeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const bpmExamples = document.querySelectorAll('.bpm-example');
+
+        // 為節拍器創建音頻視覺化
+        const audioWave = document.getElementById('audio-wave');
+        
+        for (let i = 0; i < 15; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'wave-bar';
+            audioWave.appendChild(bar);
+        }
+
+        // 初始化節拍器
+        function initMetronome() {
+            // 更新BPM顯示
+            bpmValue.textContent = bpmSlider.value;
+            currentMetronomeBpm = parseInt(bpmSlider.value);
+            
+            // 配置節拍器擺動器
+            updateMetronomePendulum(currentMetronomeBpm);
+        }
+
+        // 啟動/停止節拍器
+        function toggleMetronome() {
+            if (metronomeActive) {
+                // 停止節拍器
+                stopMetronome();
+                metronomeToggleText.textContent = '開始';
+            } else {
+                // 啟動節拍器
+                startMetronome();
+                metronomeToggleText.textContent = '停止';
+            }
+        }
+
+        // 開始節拍器
+        function startMetronome() {
+            if (metronomeActive) return;
+            
+            metronomeActive = true;
+            
+            // 獲取當前BPM值
+            currentMetronomeBpm = parseInt(bpmSlider.value);
+            
+            // 設置節拍間隔（毫秒）
+            const interval = 60000 / currentMetronomeBpm;
+            
+            // 更新節拍器擺動動畫
+            updateMetronomePendulum(currentMetronomeBpm);
+            
+            // 啟動節拍器音效
+            metronomePlay();
+            
+            // 設置定時器
+            metronomeInterval = setInterval(() => {
+                metronomePlay();
+            }, interval);
+        }
+
+        // 停止節拍器
+        function stopMetronome() {
+            if (!metronomeActive) return;
+            
+            metronomeActive = false;
+            
+            // 清除定時器
+            clearInterval(metronomeInterval);
+            
+            // 停止擺動動畫
+            const pendulum = document.getElementById('metronome-pendulum');
+            pendulum.classList.remove('active');
+        }
+
+        // 更新節拍器擺動
+        function updateMetronomePendulum(bpm) {
+            const pendulum = document.getElementById('metronome-pendulum');
+            
+            // 設置擺動時間（秒）
+            const duration = 60 / bpm;
+            
+            // 更新CSS變數
+            pendulum.style.setProperty('--duration', `${duration}s`);
+            
+            // 啟動擺動動畫
+            if (metronomeActive) {
+                pendulum.classList.add('active');
+            }
+        }
+
+        // 節拍器音效播放
+        function metronomePlay() {
+            // 播放滴答聲音
+            metronomeTickAudio.currentTime = 0;
+            metronomeTickAudio.play().catch(err => console.log('無法播放音效:', err));
+            
+            // 觸發波形動畫
+            triggerWaveAnimation();
+        }
+
+        // 波形動畫
+        function triggerWaveAnimation() {
+            // 隨機選擇中間一個bar
+            const bars = document.querySelectorAll('.wave-bar');
+            const centerIndex = Math.floor(bars.length / 2);
+            const range = 2; // 中間幾個波形條
+            
+            // 清除所有活動波形
+            bars.forEach(bar => bar.classList.remove('active'));
+            
+            // 啟動中間的波形
+            for (let i = -range; i <= range; i++) {
+                const index = centerIndex + i;
+                if (index >= 0 && index < bars.length) {
+                    bars[index].classList.add('active');
+                    
+                    // 錯開移除active類，產生更自然的波動效果
+                    setTimeout(() => {
+                        bars[index].classList.remove('active');
+                    }, 300 + Math.abs(i) * 50);
+                }
+            }
+        }
+
+        // 點擊測量BPM
+        function tapTempo() {
+            const now = performance.now();
+            
+            // 如果超過2秒沒有敲擊，重置數據
+            if (tapTempoTimestamps.length > 0 && now - tapTempoTimestamps[tapTempoTimestamps.length - 1] > 2000) {
+                tapTempoTimestamps = [];
+            }
+            
+            tapTempoTimestamps.push(now);
+            
+            // 保持最近10次敲擊
+            if (tapTempoTimestamps.length > 10) {
+                tapTempoTimestamps.shift();
+            }
+            
+            // 至少需要3次敲擊才能計算BPM
+            if (tapTempoTimestamps.length >= 3) {
+                // 計算平均間隔
+                let totalInterval = 0;
+                for (let i = 1; i < tapTempoTimestamps.length; i++) {
+                    totalInterval += tapTempoTimestamps[i] - tapTempoTimestamps[i - 1];
+                }
+                
+                const avgInterval = totalInterval / (tapTempoTimestamps.length - 1);
+                const calculatedBpm = Math.round(60000 / avgInterval);
+                
+                // 更新BPM滑塊和顯示
+                if (calculatedBpm >= 60 && calculatedBpm <= 120) {
+                    bpmSlider.value = calculatedBpm;
+                    bpmValue.textContent = calculatedBpm;
+                    currentMetronomeBpm = calculatedBpm;
+                    
+                    // 如果節拍器正在運行，則使用新BPM
+                    if (metronomeActive) {
+                        stopMetronome();
+                        startMetronome();
+                    } else {
+                        // 僅更新擺動動畫
+                        updateMetronomePendulum(calculatedBpm);
+                    }
+                    
+                    // 顯示"點擊測量BPM"按鈕的反饋
+                    tapTempoButton.classList.add('bg-conductor-gold/30');
+                    setTimeout(() => {
+                        tapTempoButton.classList.remove('bg-conductor-gold/30');
+                    }, 200);
+                }
+            }
+        }
 
         // 添加鍵盤控制支持
         document.addEventListener('keydown', function(event) {
@@ -1163,6 +1610,30 @@
             }, 50);
         }
 
+        // 教學模式BPM範例點擊處理
+        bpmExamples.forEach(example => {
+            example.addEventListener('click', () => {
+                const bpm = parseInt(example.dataset.bpm);
+                
+                // 更新滑塊和數值
+                bpmSlider.value = bpm;
+                bpmValue.textContent = bpm;
+                currentMetronomeBpm = bpm;
+                
+                // 更新節拍器
+                if (metronomeActive) {
+                    stopMetronome();
+                    startMetronome();
+                } else {
+                    updateMetronomePendulum(bpm);
+                }
+                
+                // 顯示選中效果
+                bpmExamples.forEach(ex => ex.classList.remove('border-conductor-gold'));
+                example.classList.add('border-conductor-gold');
+            });
+        });
+
         // 檢查 Web Serial API 支援
         if (!('serial' in navigator)) {
             connectionStatus.textContent = '您的瀏覽器不支援 Micro:bit 連接。請使用鍵盤操作。';
@@ -1184,8 +1655,56 @@
             melodyWave.classList.add('active');
         }
 
+        // 事件監聽器
+        // BPM滑塊變化
+        bpmSlider.addEventListener('input', function() {
+            bpmValue.textContent = this.value;
+            currentMetronomeBpm = parseInt(this.value);
+            
+            // 更新節拍器如果它正在運行
+            if (metronomeActive) {
+                stopMetronome();
+                startMetronome();
+            } else {
+                updateMetronomePendulum(currentMetronomeBpm);
+            }
+        });
+
+        // 節拍器開始/停止按鈕
+        startMetronomeButton.addEventListener('click', toggleMetronome);
+
+        // 點擊測量BPM按鈕
+        tapTempoButton.addEventListener('click', tapTempo);
+
+        // 退出教學模式按鈕
+        exitTutorialButton.addEventListener('click', function() {
+            tutorialPanel.classList.add('hidden');
+            setupPanel.classList.remove('hidden');
+            stopMetronome();
+        });
+
         // 開始遊戲按鈕
-        startMusicButton.addEventListener('click', startGame);
+        startMusicButton.addEventListener('click', function() {
+            const selectedMode = musicSelect.value;
+            
+            // 如果選擇教學模式
+            if (selectedMode === 'tutorial') {
+                setupPanel.classList.add('hidden');
+                tutorialPanel.classList.remove('hidden');
+                
+                // 初始化節拍器
+                initMetronome();
+                activateLighting();
+                
+                // 構建音頻上下文
+                if (!metronomeTickAudio.src) {
+                    metronomeTickAudio.src = 'data:audio/wav;base64,UklGRo4DAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0Yb4CAACBgIF/gn2Cf4GBgIB/gH9/gH6AfX9+f4CAf4B+gH2Af3+Af4B+f4B/gH+AgH+Af4B+gIB/gH5/f3+AgH9/f3+AgICAgH9/f4CAgICAf39/gICAgICAf39/gICAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gICAf4CAf4CAgH+AgH+AgIB/gH+AgIB/gIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/f4CAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gIGAgH5/gYGAgX5+gYGBgn5+gYGBgn5+gYGBgn19gYGCg319gIGCg319gIGCg319gIGCg318gIGDhH18gICDhH18f4CDhH18f4CDhH18f4CDhH18f4CDhH59f4CDhH59f4CDhIB9fn+DhIB9fn+EhYF9fX+EhYF9fX+EhYF9fX+EhYJ+fH6EhoN/fH2DhoSAfHyChYSBfXyChYSBfXyChYSBfXyChISCfn2ChISCfn2ChISCfn2ChISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn6BhIOCfn6BhIOCfn+BhIOCfn+BhIOCfn+BhIKCf3+AhIKCf4CAg4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+AgoKCgICAgoKCgICAgoKCgICAgoKCgICAgoKCgICAgYODgYF/gIKDgoF/gIKDgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgH+CgoOBgH9+';
+                }
+            } else {
+                // 常規遊戲模式
+                startGame();
+            }
+        });
         
         // 停止遊戲按鈕
         stopGameButton.addEventListener('click', endGame);
