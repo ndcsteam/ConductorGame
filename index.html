@@ -1679,6 +1679,9 @@
         let textDecoder = new TextDecoder();
         let accelerationCount = 0;
         
+        // DOM 元素全局變數 - 將mainContent定義為全局
+        const mainContent = document.getElementById('main-content');
+        
         // BPM 計算相關變數
         let timestamps = [];
         let lastTimestamp = 0;
