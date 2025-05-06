@@ -834,6 +834,126 @@
             background-color: rgba(212, 175, 55, 0.9);
             box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
         }
+        
+        /* 遊戲模式選擇頁 */
+        .mode-selection-page {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .mode-card {
+            width: 100%;
+            max-width: 320px;
+            height: 240px;
+            background: rgba(26, 26, 26, 0.7);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.3s ease;
+            transform-origin: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .mode-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            border-color: rgba(212, 175, 55, 0.5);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(212, 175, 55, 0.2);
+        }
+        
+        .mode-card:active {
+            transform: translateY(0) scale(0.98);
+        }
+        
+        .mode-card-content {
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 100%);
+        }
+        
+        .mode-card-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.6;
+            transition: opacity 0.3s ease, transform 0.5s ease;
+            z-index: 1;
+        }
+        
+        .mode-card:hover .mode-card-bg {
+            opacity: 0.75;
+            transform: scale(1.05);
+        }
+        
+        .mode-coming-soon {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(244, 67, 54, 0.9);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            transform: rotate(5deg);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 3;
+        }
+        
+        /* 彈出提示 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -874,6 +994,53 @@
             使用您的 Micro:bit 作為指揮棒，或使用鍵盤空格鍵指揮樂團，體驗音樂指揮的魅力
         </div>
     </div>
+    
+    <!-- 遊戲模式選擇頁面 -->
+    <div id="mode-selection-page" class="mode-selection-page page-transition page-hidden">
+        <h1 class="cover-title text-4xl md:text-5xl font-bold mb-6 text-center text-conductor-gold">選擇體驗模式</h1>
+        <p class="cover-subtitle text-lg mb-10 text-center text-gray-300">探索不同的音樂指揮體驗</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto px-4">
+            <!-- 教學模式卡片 -->
+            <div id="tutorial-mode-card" class="mode-card">
+                <div class="mode-card-bg" style="background-image: url('https://images.unsplash.com/photo-1507838153414-b4b713384a76?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');"></div>
+                <div class="mode-card-content">
+                    <h3 class="text-xl font-bold text-conductor-gold mb-2">教學模式</h3>
+                    <p class="text-sm text-gray-300">學習節拍感受與指揮基本技巧，為音樂演奏做準備</p>
+                </div>
+            </div>
+            
+            <!-- 演奏遊戲卡片 -->
+            <div id="performance-mode-card" class="mode-card">
+                <div class="mode-card-bg" style="background-image: url('https://images.unsplash.com/photo-1465847899084-d164df4dedc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');"></div>
+                <div class="mode-card-content">
+                    <h3 class="text-xl font-bold text-conductor-gold mb-2">演奏遊戲</h3>
+                    <p class="text-sm text-gray-300">選擇經典曲目，用您的指揮棒帶領樂團演奏美妙樂章</p>
+                </div>
+            </div>
+            
+            <!-- 故事模式卡片 -->
+            <div id="story-mode-card" class="mode-card">
+                <div class="mode-card-bg" style="background-image: url('https://images.unsplash.com/photo-1511735111819-9a3f7709049c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');"></div>
+                <div class="mode-card-content">
+                    <h3 class="text-xl font-bold text-conductor-gold mb-2">故事模式</h3>
+                    <p class="text-sm text-gray-300">踏上音樂之旅，從新手指揮成長為大師級音樂家</p>
+                </div>
+                <div class="mode-coming-soon">敬請期待</div>
+            </div>
+        </div>
+        
+        <div class="mt-10">
+            <button id="back-to-cover-button" class="elegant-button">
+                返回首頁
+            </button>
+        </div>
+        
+        <!-- 連接狀態指示 -->
+        <div id="connection-status-display" class="mt-6 text-center text-sm text-gray-400">
+            使用鍵盤空格鍵或上箭頭進行指揮
+        </div>
+    </div>
 
     <!-- 主遊戲內容 -->
     <div id="main-content" class="container mx-auto px-4 py-8 max-w-4xl page-transition page-hidden">
@@ -912,8 +1079,6 @@
                 <h2 class="text-xl font-semibold mb-4 text-conductor-gold">選擇樂章</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <select id="music-select" class="w-full py-2 px-3 border border-conductor-gold bg-conductor-dark text-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-conductor-gold/50">
-                        <option value="tutorial">教學模式：節拍感受（60-120 BPM）</option>
-                        <option value="game_start">序曲：舞台準備</option>
                         <option value="waltz">華爾滋：藍色多瑙河（目標 BPM: 60）</option>
                         <option value="march">進行曲：拉德斯基（目標 BPM: 108）</option>
                         <option value="symphony">交響曲：命運之門（目標 BPM: 88）</option>
@@ -1206,7 +1371,7 @@
                 <!-- 返回按鈕 -->
                 <div class="flex justify-center mt-6">
                     <button id="exit-tutorial" class="elegant-button">
-                        返回選曲
+                        返回選單
                     </button>
                 </div>
             </div>
@@ -1216,41 +1381,53 @@
             <audio id="metronome-audio" class="hidden"></audio>
         </div>
     </div>
+    
+    <!-- 彈出提示框 - 故事模式 -->
+    <div id="story-mode-modal" class="modal-overlay">
+        <div class="modal-content text-center">
+            <div class="text-4xl text-conductor-gold mb-4">🎵</div>
+            <h3 class="text-xl font-bold text-conductor-gold mb-3">故事模式開發中</h3>
+            <p class="text-gray-300 mb-6">我們正在精心打造更精彩的音樂故事旅程，敬請期待！</p>
+            <button id="close-modal-button" class="elegant-button">
+                我知道了
+            </button>
+        </div>
+    </div>
 
     <script>
         // 頁面切換控制與動態音符生成
         document.addEventListener("DOMContentLoaded", function() {
             const coverPage = document.getElementById('cover-page');
+            const modeSelectionPage = document.getElementById('mode-selection-page');
             const mainContent = document.getElementById('main-content');
             const startGameButton = document.getElementById('start-game-button');
+            const backToCoverButton = document.getElementById('back-to-cover-button');
+            const tutorialModeCard = document.getElementById('tutorial-mode-card');
+            const performanceModeCard = document.getElementById('performance-mode-card');
+            const storyModeCard = document.getElementById('story-mode-card');
+            const storyModeModal = document.getElementById('story-mode-modal');
+            const closeModalButton = document.getElementById('close-modal-button');
+            const connectionStatusDisplay = document.getElementById('connection-status-display');
             const musicNotesContainer = document.getElementById('music-notes-container');
             
             // 生成動態音符
             createDynamicMusicNotes();
             
-            // 整合頁面切換與遊戲設置
+            // 首頁開始按鈕 - 轉到模式選擇頁
             startGameButton.addEventListener('click', async function() {
                 coverPage.classList.add('page-hidden');
                 // 清除音符生成
                 cleanupMusicNotes();
                 
                 setTimeout(async () => {
-                    mainContent.classList.remove('page-hidden');
+                    // 顯示模式選擇頁
+                    modeSelectionPage.classList.remove('page-hidden');
                     
-                    // 直接顯示遊戲設置面板，跳過連接步驟
-                    connectionPanel.classList.add('hidden');
-                    setupPanel.classList.remove('hidden');
-                    
-                    // 使用默認的鍵盤模式提示
-                    connectionStatus.textContent = '使用鍵盤空格鍵或上箭頭進行指揮';
-                    connectionStatus.classList.add('text-yellow-500');
-                    
-                    // 如果支援Web Serial API，嘗試連接
+                    // 嘗試連接指揮棒
                     if ('serial' in navigator) {
                         try {
                             // 添加指示訊息
-                            connectionStatus.textContent = '請從彈出對話框選擇Micro:bit設備...';
-                            connectionStatus.classList.remove('hidden');
+                            connectionStatusDisplay.textContent = '請從彈出對話框選擇Micro:bit設備...';
                             
                             // 請求 serial port
                             port = await navigator.serial.requestPort({
@@ -1262,9 +1439,8 @@
                             await port.open({ baudRate: 115200 });
                             
                             // 連接成功提示
-                            connectionStatus.textContent = '已連接指揮棒！';
-                            connectionStatus.classList.remove('text-yellow-500');
-                            connectionStatus.classList.add('text-green-400');
+                            connectionStatusDisplay.textContent = '已連接指揮棒！可使用指揮棒或空格鍵指揮';
+                            connectionStatusDisplay.classList.add('text-green-400');
                             
                             // 開始讀取數據
                             readSerialData();
@@ -1273,19 +1449,86 @@
                             
                             // 根據錯誤類型顯示不同的訊息
                             if (error.name === 'NotFoundError') {
-                                connectionStatus.textContent = '未找到可用的指揮棒設備，使用鍵盤操作';
+                                connectionStatusDisplay.textContent = '未找到可用的指揮棒設備，使用鍵盤操作';
                             } else if (error.name === 'SecurityError') {
-                                connectionStatus.textContent = '權限被拒絕，使用鍵盤空格鍵或上箭頭進行指揮';
+                                connectionStatusDisplay.textContent = '權限被拒絕，使用鍵盤空格鍵或上箭頭進行指揮';
                             } else if (error.message && error.message.includes('No port selected')) {
-                                connectionStatus.textContent = '未選擇設備，使用鍵盤空格鍵或上箭頭進行指揮';
+                                connectionStatusDisplay.textContent = '未選擇設備，使用鍵盤空格鍵或上箭頭進行指揮';
                             } else {
-                                connectionStatus.textContent = '無法連接指揮棒，使用鍵盤空格鍵或上箭頭進行指揮';
+                                connectionStatusDisplay.textContent = '無法連接指揮棒，使用鍵盤空格鍵或上箭頭進行指揮';
                             }
-                            
-                            connectionStatus.classList.add('text-yellow-500');
                         }
+                    } else {
+                        connectionStatusDisplay.textContent = '您的瀏覽器不支援指揮棒連接，使用鍵盤空格鍵指揮';
                     }
                 }, 400);
+            });
+            
+            // 返回首頁按鈕
+            backToCoverButton.addEventListener('click', function() {
+                modeSelectionPage.classList.add('page-hidden');
+                
+                setTimeout(() => {
+                    coverPage.classList.remove('page-hidden');
+                    createDynamicMusicNotes();
+                }, 400);
+            });
+            
+            // 教學模式卡片
+            tutorialModeCard.addEventListener('click', function() {
+                modeSelectionPage.classList.add('page-hidden');
+                
+                setTimeout(() => {
+                    mainContent.classList.remove('page-hidden');
+                    
+                    // 顯示教學模式面板
+                    connectionPanel.classList.add('hidden');
+                    setupPanel.classList.add('hidden');
+                    tutorialPanel.classList.remove('hidden');
+                    
+                    // 初始化節拍器
+                    initMetronome();
+                    activateLighting();
+                    
+                    // 構建音頻上下文
+                    if (!metronomeTickAudio.src) {
+                        metronomeTickAudio.src = 'data:audio/wav;base64,UklGRo4DAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0Yb4CAACBgIF/gn2Cf4GBgIB/gH9/gH6AfX9+f4CAf4B+gH2Af3+Af4B+f4B/gH+AgH+Af4B+gIB/gH5/f3+AgH9/f3+AgICAgH9/f4CAgICAf39/gICAgICAf39/gICAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gICAf4CAf4CAgH+AgH+AgIB/gH+AgIB/gIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/f4CAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gIGAgH5/gYGAgX5+gYGBgn5+gYGBgn5+gYGBgn19gYGCg319gIGCg319gIGCg319gIGCg318gIGDhH18gICDhH18f4CDhH18f4CDhH18f4CDhH18f4CDhH59f4CDhH59f4CDhIB9fn+DhIB9fn+EhYF9fX+EhYF9fX+EhYF9fX+EhYJ+fH6EhoN/fH2DhoSAfHyChYSBfXyChYSBfXyChYSBfXyChISCfn2ChISCfn2ChISCfn2ChISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn6BhIOCfn6BhIOCfn+BhIOCfn+BhIOCfn+BhIKCf3+AhIKCf4CAg4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+AgoKCgICAgoKCgICAgoKCgICAgoKCgICAgoKCgICAgYODgYF/gIKDgoF/gIKDgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgH+CgoOBgH9+';
+                    }
+                }, 400);
+            });
+            
+            // 演奏遊戲卡片
+            performanceModeCard.addEventListener('click', function() {
+                modeSelectionPage.classList.add('page-hidden');
+                
+                setTimeout(() => {
+                    mainContent.classList.remove('page-hidden');
+                    
+                    // 顯示選曲面板
+                    connectionPanel.classList.add('hidden');
+                    setupPanel.classList.remove('hidden');
+                    
+                    // 使用默認的鍵盤模式提示
+                    connectionStatus.textContent = '使用鍵盤空格鍵或上箭頭進行指揮';
+                    connectionStatus.classList.add('text-yellow-500');
+                }, 400);
+            });
+            
+            // 故事模式卡片 - 顯示提示
+            storyModeCard.addEventListener('click', function() {
+                storyModeModal.classList.add('active');
+            });
+            
+            // 關閉故事模式提示
+            closeModalButton.addEventListener('click', function() {
+                storyModeModal.classList.remove('active');
+            });
+            
+            // 點擊模態框外部區域關閉
+            storyModeModal.addEventListener('click', function(e) {
+                if (e.target === storyModeModal) {
+                    storyModeModal.classList.remove('active');
+                }
             });
             
             // 中央向外擴散的音符函數
@@ -1468,18 +1711,6 @@
 
         // 音樂資源設定
         const MUSIC_RESOURCES = {
-            tutorial: {
-                url: null, // 教學模式沒有音樂URL
-                duration: 0,
-                bpm: 0, // 可調整的BPM
-                title: '教學模式：節拍感受'
-            },
-            game_start: {
-                url: 'https://cdn.jsdelivr.net/gh/iGitScor/Music-samples/wav/bubbles.wav',
-                duration: 10,
-                bpm: 0, // 非遊戲音樂
-                title: '序曲：舞台準備'
-            },
             waltz: {
                 url: './audio/TheBlueDanube.mp3',
                 duration: 30,
@@ -1839,32 +2070,17 @@
         // 退出教學模式按鈕
         exitTutorialButton.addEventListener('click', function() {
             tutorialPanel.classList.add('hidden');
-            setupPanel.classList.remove('hidden');
+            mainContent.classList.add('page-hidden');
             stopMetronome();
+            
+            setTimeout(() => {
+                // 顯示模式選擇頁
+                document.getElementById('mode-selection-page').classList.remove('page-hidden');
+            }, 400);
         });
 
         // 開始遊戲按鈕
-        startMusicButton.addEventListener('click', function() {
-            const selectedMode = musicSelect.value;
-            
-            // 如果選擇教學模式
-            if (selectedMode === 'tutorial') {
-                setupPanel.classList.add('hidden');
-                tutorialPanel.classList.remove('hidden');
-                
-                // 初始化節拍器
-                initMetronome();
-                activateLighting();
-                
-                // 構建音頻上下文
-                if (!metronomeTickAudio.src) {
-                    metronomeTickAudio.src = 'data:audio/wav;base64,UklGRo4DAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0Yb4CAACBgIF/gn2Cf4GBgIB/gH9/gH6AfX9+f4CAf4B+gH2Af3+Af4B+f4B/gH+AgH+Af4B+gIB/gH5/f3+AgH9/f3+AgICAgH9/f4CAgICAf39/gICAgICAf39/gICAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gICAf4CAf4CAgH+AgH+AgIB/gH+AgIB/gIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/f4CAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gIGAgH5/gYGAgX5+gYGBgn5+gYGBgn5+gYGBgn19gYGCg319gIGCg319gIGCg319gIGCg318gIGDhH18gICDhH18f4CDhH18f4CDhH18f4CDhH18f4CDhH59f4CDhH59f4CDhIB9fn+DhIB9fn+EhYF9fX+EhYF9fX+EhYF9fX+EhYJ+fH6EhoN/fH2DhoSAfHyChYSBfXyChYSBfXyChYSBfXyChISCfn2ChISCfn2ChISCfn2ChISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn6BhIOCfn6BhIOCfn+BhIOCfn+BhIOCfn+BhIKCf3+AhIKCf4CAg4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+AgoKCgICAgoKCgICAgoKCgICAgoKCgICAgoKCgICAgYODgYF/gIKDgoF/gIKDgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgH+CgoOBgH9+';
-                }
-            } else {
-                // 常規遊戲模式
-                startGame();
-            }
-        });
+        startMusicButton.addEventListener('click', startGame);
         
         // 停止遊戲按鈕
         stopGameButton.addEventListener('click', endGame);
@@ -1900,9 +2116,13 @@
                 if (port && port.readable) {
                     setTimeout(readSerialData, 100);
                 } else {
+                    // 更新所有連接狀態顯示
                     connectionStatus.textContent = '連接已斷開，可使用鍵盤操作';
                     connectionStatus.classList.remove('text-green-400');
                     connectionStatus.classList.add('text-yellow-500');
+                    
+                    document.getElementById('connection-status-display').textContent = '連接已斷開，可使用鍵盤操作';
+                    document.getElementById('connection-status-display').classList.remove('text-green-400');
                     
                     // 如果遊戲正在進行，則繼續
                     if (gameActive) {
@@ -2058,13 +2278,6 @@
             
             // 啟動燈光效果
             activateLighting();
-            
-            // 不是遊戲音樂則返回選擇界面
-            if (targetBpm === 0) {
-                gameAudio.src = currentMusic.url;
-                gameAudio.play();
-                return;
-            }
             
             // 重置遊戲數據
             gameData = {
@@ -2448,8 +2661,16 @@
 
         // 重置遊戲
         function resetGame() {
+            // 隱藏結果面板
             resultPanel.classList.add('hidden');
-            setupPanel.classList.remove('hidden');
+            
+            // 隱藏整個內容頁面
+            mainContent.classList.add('page-hidden');
+            
+            // 顯示模式選擇頁
+            setTimeout(() => {
+                document.getElementById('mode-selection-page').classList.remove('page-hidden');
+            }, 400);
             
             // 重置遊戲數據
             lastTimestamp = 0;
