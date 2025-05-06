@@ -1084,7 +1084,7 @@
                     <select id="music-select" class="w-full py-2 px-3 border border-conductor-gold bg-conductor-dark text-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-conductor-gold/50">
                         <option value="newworld">德弗札克：新世界交響曲 第二樂章（目標 BPM: 55）</option>
                         <option value="ode">貝多芬：第九交響曲 歡樂頌（目標 BPM: 115）</option>
-                        <option value="spring">韋瓦第：四季 春（目標 BPM: 85）</option>
+                        <option value="spring">韋瓦第：四季 春（目標 BPM: 92）</option>
                     </select>
                     <div class="mt-2 text-xs text-gray-400">
                         計算方式：平均節拍法 | 靈敏度調整：420ms
@@ -1757,7 +1757,7 @@
             spring: {
                 url: './audio/CG03.mp3',
                 duration: 180,
-                bpm: 85,
+                bpm: 92,
                 title: '韋瓦第：四季 (春)',
                 comment: '明亮歡快的小提琴協奏曲，生動描繪春天的活力與大自然蘇醒的景象'
             }
@@ -2619,40 +2619,41 @@
             note.className = 'absolute pointer-events-none';
             note.textContent = symbolText;
             
-            // 設置隨機起始位置（以指揮家為中心點）
-            const randomOffsetX = -20 + Math.random() * 40; // -20px ~ +20px
-            const randomOffsetY = -30 + Math.random() * 10; // 主要從上方出現
+            // 設置起始位置（精確在指揮家中心點）
+            note.style.left = `50%`;
+            note.style.top = `50%`;
+            note.style.transform = `translate(-50%, -50%)`; // 確保音符從正中心開始
             
-            note.style.left = `calc(50% + ${randomOffsetX}px)`;
-            note.style.top = `calc(50% + ${randomOffsetY}px)`;
+            // 設置隨機旋轉角度
+            const rotationAngle = Math.random() * 360; // 0-360度完全隨機旋轉
             
-            // 設置隨機角度
-            const rotationAngle = -20 + Math.random() * 40; // -20deg ~ +20deg
-            
-            // 設置隨機基礎大小 (12-20px)
-            const baseSize = Math.floor(Math.random() * 9) + 12;
+            // 設置隨機基礎大小 (10-18px)
+            const baseSize = Math.floor(Math.random() * 9) + 10;
             note.style.fontSize = `${baseSize}px`;
             
             // 金色效果和透明度
             note.style.color = 'rgba(212, 175, 55, 0.8)';
             note.style.textShadow = '0 0 8px rgba(212, 175, 55, 0.4)';
             
-            // 計算擴散方向 (主要向上擴散)
-            const angle = -100 + Math.random() * 20; // 向上擴散，略微有角度變化
+            // 計算全方位擴散方向 (0-360度均勻分佈)
+            const angle = Math.random() * 360;
             
-            // 計算擴散距離
-            const distance = 50 + Math.random() * 30; // 50-80px
+            // 計算擴散距離 (更遠的距離，創造更廣闊的效果)
+            const distance = 60 + Math.random() * 60; // 60-120px
             
-            // 添加上升和淡出動畫
-            const animationName = `note_float_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+            // 添加向四周擴散的動畫
+            const animationName = `note_radiate_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
             const keyframes = `
             @keyframes ${animationName} {
                 0% {
-                    transform: translate(0, 0) rotate(${rotationAngle}deg) scale(0.8);
+                    transform: translate(-50%, -50%) rotate(${rotationAngle}deg) scale(0.6);
+                    opacity: 0.9;
+                }
+                30% {
                     opacity: 0.8;
                 }
                 100% {
-                    transform: translate(${Math.cos(angle * Math.PI / 180) * distance}px, ${Math.sin(angle * Math.PI / 180) * distance}px) rotate(${rotationAngle + (Math.random() * 20 - 10)}deg) scale(1.5);
+                    transform: translate(calc(-50% + ${Math.cos(angle * Math.PI / 180) * distance}px), calc(-50% + ${Math.sin(angle * Math.PI / 180) * distance}px)) rotate(${rotationAngle + (Math.random() * 60 - 30)}deg) scale(2);
                     opacity: 0;
                 }
             }`;
@@ -2661,9 +2662,9 @@
             style.textContent = keyframes;
             document.head.appendChild(style);
             
-            // 設置動畫持續時間 (1.5-3秒，比之前更快一些)
-            const duration = 1.5 + Math.random() * 1.5;
-            note.style.animation = `${animationName} ${duration}s ease-out forwards`;
+            // 設置動畫持續時間 (1.2-2.5秒)
+            const duration = 1.2 + Math.random() * 1.3;
+            note.style.animation = `${animationName} ${duration}s cubic-bezier(0.1, 0.4, 0.7, 1) forwards`;
             
             // 添加至容器
             notesContainer.appendChild(note);
