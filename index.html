@@ -1103,9 +1103,9 @@
                 <!-- 指揮動畫 -->
                 <div class="flex justify-center items-center mb-8">
                     <div id="conductor-animation" class="relative h-64 w-64 flex justify-center items-center podium p-4 overflow-hidden">
-                        <!-- 指揮家圖片 -->
+                        <!-- 指揮家動畫 -->
                         <div class="absolute inset-0 w-full h-full flex items-center justify-center">
-                            <img id="conductor-image" src="./images/conductorback02.png" alt="指揮家背影" 
+                            <img id="conductor-image" src="./animation/conductor/001.png" alt="指揮家動畫" 
                                  class="object-contain max-h-full max-w-full transition-opacity duration-100" />
                         </div>
                     </div>
@@ -2193,18 +2193,59 @@
             }
         }
 
+        // 單次動畫循環（適用於練習模式）
+        function animateConductorSingleCycle(imageElement, bpm) {
+            if (!bpm || bpm <= 0) {
+                bpm = 80; // 默認BPM
+            }
+            
+            // 清除任何現有的動畫計時器
+            if (imageElement.animationTimer) {
+                clearTimeout(imageElement.animationTimer);
+            }
+            
+            // 設置當前幀和總幀數
+            let frame = 1;
+            const totalFrames = 16;
+            
+            // 計算完成一個循環的總時間 (秒)
+            const cycleDuration = 60 / bpm;
+            
+            // 計算每一幀的延遲時間 (毫秒)
+            const frameDelay = (cycleDuration * 1000) / totalFrames;
+            
+            // 更新到第一幀
+            imageElement.src = `./animation/conductor/001.png`;
+            
+            // 設置動畫函數
+            function animateFrame() {
+                frame++;
+                if (frame <= totalFrames) {
+                    // 更新圖片源
+                    const frameNumber = frame.toString().padStart(3, '0');
+                    imageElement.src = `./animation/conductor/${frameNumber}.png`;
+                    
+                    // 繼續動畫
+                    imageElement.animationTimer = setTimeout(animateFrame, frameDelay);
+                }
+            }
+            
+            // 啟動動畫
+            imageElement.animationTimer = setTimeout(animateFrame, frameDelay);
+        }
+        
         // 練習模式的指揮動作
         function practiceBeat() {
             const now = performance.now();
             
-            // 顯示指揮動作圖片 (抬手)
+            // 基於教學模式的當前設置BPM啟動實時動畫
+            const animBpm = currentMetronomeBpm;
+            
+            // 更新練習模式指揮棒圖片 - 使用循環動畫
             if (practiceConductorImage) {
-                practiceConductorImage.src = './images/conductorback01.png';
-                
-                // 短暫延遲後恢復原來的姿勢
-                setTimeout(() => {
-                    practiceConductorImage.src = './images/conductorback02.png';
-                }, 350);
+                // 將練習模式指揮家圖片也改為使用動畫幀
+                practiceConductorImage.src = './animation/conductor/001.png';
+                animateConductorSingleCycle(practiceConductorImage, animBpm);
             }
             
             // 記錄時間戳以計算平均 BPM
@@ -2295,6 +2336,12 @@
             }
         }
 
+        // 頁面加載時初始化指揮家動畫
+        document.addEventListener("DOMContentLoaded", function() {
+            // 預加載指揮家動畫
+            initConductorAnimation();
+        });
+        
         // 開始遊戲
         function startGame() {
             const musicKey = musicSelect.value;
@@ -2482,20 +2529,91 @@
             }
         }
         
+        // 指揮家動畫控制相關變數
+        let conductorAnimationFrames = 16; // 總幀數
+        let currentAnimationFrame = 1; // 當前幀
+        let conductorAnimationTimer = null; // 動畫計時器
+        let conductorAnimating = false; // 是否正在動畫中
+
+        // 初始化指揮家動畫
+        function initConductorAnimation() {
+            // 預加載所有動畫幀
+            for (let i = 1; i <= conductorAnimationFrames; i++) {
+                const img = new Image();
+                img.src = `./animation/conductor/${i.toString().padStart(3, '0')}.png`;
+            }
+        }
+
+        // 啟動指揮家動畫
+        function startConductorAnimation(bpm) {
+            // 如果已經在動畫中，先清除之前的動畫
+            if (conductorAnimationTimer) {
+                clearInterval(conductorAnimationTimer);
+                conductorAnimationTimer = null;
+            }
+            
+            if (!bpm || bpm <= 0) {
+                bpm = targetBpm || 80; // 使用預設值
+            }
+            
+            // 計算動畫間隔時間（毫秒）- 完成一個循環的時間是 60/bpm 秒
+            const animationDuration = 60000 / bpm; // 完成整個週期的時間
+            const frameInterval = animationDuration / conductorAnimationFrames; // 每幀的間隔
+            
+            const conductorImage = document.getElementById('conductor-image');
+            currentAnimationFrame = 1;
+            conductorAnimating = true;
+            
+            // 更新第一幀
+            conductorImage.src = `./animation/conductor/001.png`;
+            
+            // 設置動畫計時器
+            conductorAnimationTimer = setInterval(() => {
+                currentAnimationFrame = (currentAnimationFrame % conductorAnimationFrames) + 1;
+                const frameNumber = currentAnimationFrame.toString().padStart(3, '0');
+                conductorImage.src = `./animation/conductor/${frameNumber}.png`;
+                
+                // 如果到達動畫末尾，檢查是否應該繼續
+                if (currentAnimationFrame === conductorAnimationFrames && !gameActive) {
+                    clearInterval(conductorAnimationTimer);
+                    conductorAnimationTimer = null;
+                    conductorAnimating = false;
+                }
+            }, frameInterval);
+        }
+
+        // 停止指揮家動畫
+        function stopConductorAnimation() {
+            if (conductorAnimationTimer) {
+                clearInterval(conductorAnimationTimer);
+                conductorAnimationTimer = null;
+            }
+            
+            conductorAnimating = false;
+            
+            // 重置為第一幀
+            const conductorImage = document.getElementById('conductor-image');
+            if (conductorImage) {
+                conductorImage.src = `./animation/conductor/001.png`;
+            }
+        }
+        
         // 指揮動作
         function conductorBeat() {
             accelerationCount++;
             const now = performance.now();
             
-            // 顯示指揮動作圖片 (抬手)
-            const conductorImage = document.getElementById('conductor-image');
-            if (conductorImage) {
-                conductorImage.src = './images/conductorback01.png';
-                
-                // 短暫延遲後恢復原來的姿勢
-                setTimeout(() => {
-                    conductorImage.src = './images/conductorback02.png';
-                }, 350);
+            // 獲取目前的 BPM
+            const currentBpm = calculateAverageBPM() || targetBpm;
+            
+            // 如果未在動畫中，啟動動畫
+            if (!conductorAnimating) {
+                startConductorAnimation(currentBpm);
+            }
+            // 如果已經在動畫中，則按新的 BPM 重新開始動畫
+            else if (Math.abs(bpm - currentBpm) > 5) {
+                stopConductorAnimation();
+                startConductorAnimation(currentBpm);
             }
             
             // 觸發旋律波浪
