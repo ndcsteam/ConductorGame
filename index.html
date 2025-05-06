@@ -1148,7 +1148,7 @@
 
                 <!-- 練習模式提示 -->
                 <div id="practice-mode-banner" class="hidden mb-6 py-3 px-4 rounded-lg bg-conductor-dark border border-conductor-gold/20 text-center">
-                    <div class="text-lg font-semibold mb-1 text-conductor-gold"><span id="practice-countdown">10</span> 秒預備時間</div>
+                    <div class="text-lg font-semibold mb-1 text-conductor-gold"><span id="practice-countdown">15</span> 秒預備時間</div>
                     <div class="text-sm text-gray-400">請感受音樂節奏，掌握樂曲情感，此階段為熱身</div>
                 </div>
 
@@ -1168,7 +1168,7 @@
                 <div class="mb-6">
                     <div class="flex justify-between text-sm mb-1">
                         <div>樂章進度</div>
-                        <div id="time-display" class="text-conductor-gold/80">00:00 / 00:00</div>
+                        <div id="time-display" class="text-conductor-gold/80">00:00 / 01:00</div>
                     </div>
                     <div class="w-full bg-conductor-dark/70 rounded-full h-2 overflow-hidden border border-conductor-gold/10">
                         <div id="progress-bar" class="bg-gradient-to-r from-conductor-gold/60 to-conductor-gold/80 h-2 rounded-full w-0 relative">
@@ -1698,7 +1698,9 @@
         let gameTimer = null;
         let isPracticeMode = true; // 初始為練習模式
         let practiceEndTime = 0; // 練習模式結束時間
-        const PRACTICE_DURATION = 10; // 練習模式持續10秒
+        const PRACTICE_DURATION = 15; // 練習模式持續15秒（調整為15秒）
+        const GAME_TOTAL_DURATION = 60; // 遊戲總時長60秒
+        let gameEndTime = 0; // 遊戲結束時間
         let currentPlaybackRate = 1.0; // 當前音樂播放速度
         const FAST_PLAYBACK_RATE = 1.15; // 快速播放速度
         const SLOW_PLAYBACK_RATE = 0.85; // 慢速播放速度
@@ -1710,6 +1712,7 @@
         };
         let accuracyTimeoutId = null;
         let speedNotificationTimeoutId = null;
+        let fadeOutInterval = null; // 音樂淡出計時器
         
         // 節拍器相關變數
         let metronomeActive = false;
@@ -1731,21 +1734,21 @@
         // 音樂資源設定
         const MUSIC_RESOURCES = {
             newworld: {
-                url: './audio/01_Antonín_Dvořák_Symphony_9_E_Minor_II_Largo.mp3',
+                url: './audio/CG01.mp3',
                 duration: 180,
                 bpm: 55,
                 title: '德弗札克：新世界交響曲 (第二樂章)',
                 comment: '深沉優美的慢板旋律，彷彿將聽眾帶入遙遠的新大陸，充滿懷鄉與冥想的氛圍'
             },
             ode: {
-                url: './audio/02_Beethoven_Joy.mp3',
+                url: './audio/CG02.mp3',
                 duration: 180,
                 bpm: 115,
                 title: '貝多芬：第九交響曲 (歡樂頌)',
                 comment: '氣勢磅礡的合唱交響樂，象徵人類團結與和平的永恆頌歌，充滿喜悅與力量'
             },
             spring: {
-                url: './audio/03_Vivaldi_Spring.mp3',
+                url: './audio/CG03.mp3',
                 duration: 180,
                 bpm: 85,
                 title: '韋瓦第：四季 (春)',
@@ -2349,13 +2352,17 @@
                 const duration = gameAudio.duration;
                 updateTimeDisplay(0, duration);
                 
+                // 計算遊戲結束時間 (60秒)
+                gameEndTime = GAME_TOTAL_DURATION;
+                
                 // 設置進度更新定時器
                 gameTimer = setInterval(() => {
                     const currentTime = gameAudio.currentTime;
-                    const duration = gameAudio.duration;
                     
-                    updateProgressBar(currentTime / duration * 100);
-                    updateTimeDisplay(currentTime, duration);
+                    // 計算進度百分比 (基於60秒)
+                    const progressPercent = Math.min(100, (currentTime / gameEndTime) * 100);
+                    updateProgressBar(progressPercent);
+                    updateTimeDisplay(currentTime, gameEndTime);
                     
                     // 更新練習模式倒計時
                     if (isPracticeMode) {
@@ -2385,9 +2392,10 @@
                         }
                     }
                     
-                    // 檢查遊戲是否結束
-                    if (currentTime >= duration) {
-                        endGame();
+                    // 檢查遊戲是否到達60秒（遊戲結束時間）
+                    if (currentTime >= gameEndTime) {
+                        // 淡出音樂並結束遊戲
+                        fadeOutAudioAndEndGame();
                     }
                 }, 100);
             };
@@ -2621,9 +2629,51 @@
             timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
         }
 
+                // 音樂淡出並結束遊戲
+        function fadeOutAudioAndEndGame() {
+            // 取消任何正在進行的淡出效果
+            if (fadeOutInterval) {
+                clearInterval(fadeOutInterval);
+            }
+            
+            // 停止更新定時器
+            if (gameTimer) {
+                clearInterval(gameTimer);
+                gameTimer = null;
+            }
+            
+            // 初始化淡出參數
+            const initialVolume = gameAudio.volume;
+            const fadeOutDuration = 2000; // 淡出持續2秒
+            const fadeOutSteps = 50; // 淡出步驟數
+            const volumeStep = initialVolume / fadeOutSteps;
+            let currentStep = 0;
+            
+            // 顯示完成指揮的通知
+            showAccuracyFeedback('表演完成！正在計算成績...', 'text-conductor-gold');
+            
+            // 開始淡出音樂
+            fadeOutInterval = setInterval(() => {
+                currentStep++;
+                
+                if (currentStep >= fadeOutSteps) {
+                    // 淡出完成，停止音頻
+                    clearInterval(fadeOutInterval);
+                    gameAudio.pause();
+                    gameAudio.volume = initialVolume; // 恢復音量設置以備下次使用
+                    
+                    // 正式結束遊戲
+                    endGame();
+                } else {
+                    // 降低音量
+                    gameAudio.volume = initialVolume - (volumeStep * currentStep);
+                }
+            }, fadeOutDuration / fadeOutSteps);
+        }
+        
         // 結束遊戲
         function endGame() {
-            // 停止音樂和計時器
+            // 確保音樂停止
             gameAudio.pause();
             if (gameTimer) {
                 clearInterval(gameTimer);
