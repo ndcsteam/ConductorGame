@@ -1168,7 +1168,7 @@
                 <div class="mb-6">
                     <div class="flex justify-between text-sm mb-1">
                         <div>樂章進度</div>
-                        <div id="time-display" class="text-conductor-gold/80">00:00 / 01:00</div>
+                        <div id="time-display" class="text-conductor-gold/80">00:00 / 01:15</div>
                     </div>
                     <div class="w-full bg-conductor-dark/70 rounded-full h-2 overflow-hidden border border-conductor-gold/10">
                         <div id="progress-bar" class="bg-gradient-to-r from-conductor-gold/60 to-conductor-gold/80 h-2 rounded-full w-0 relative">
@@ -1698,8 +1698,8 @@
         let gameTimer = null;
         let isPracticeMode = true; // 初始為練習模式
         let practiceEndTime = 0; // 練習模式結束時間
-        const PRACTICE_DURATION = 15; // 練習模式持續15秒（調整為15秒）
-        const GAME_TOTAL_DURATION = 60; // 遊戲總時長60秒
+        const PRACTICE_DURATION = 15; // 練習模式持續15秒
+        const GAME_TOTAL_DURATION = 75; // 遊戲總時長75秒（調整為75秒）
         let gameEndTime = 0; // 遊戲結束時間
         let currentPlaybackRate = 1.0; // 當前音樂播放速度
         const FAST_PLAYBACK_RATE = 1.15; // 快速播放速度
