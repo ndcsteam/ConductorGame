@@ -399,16 +399,19 @@
         /* 頁面轉場 */
         .page-transition {
             transition: opacity 0.8s ease, transform 0.8s ease;
+            position: relative;
         }
         
         .page-hidden {
             opacity: 0;
             transform: translateY(20px);
             pointer-events: none;
-            position: absolute;
+            position: absolute !important;
             top: 0;
             left: 0;
             right: 0;
+            visibility: hidden;
+            z-index: -1;
         }
         
         /* 指揮棒動畫 */
@@ -1079,9 +1082,9 @@
                 <h2 class="text-xl font-semibold mb-4 text-conductor-gold">選擇樂章</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <select id="music-select" class="w-full py-2 px-3 border border-conductor-gold bg-conductor-dark text-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-conductor-gold/50">
-                        <option value="waltz">華爾滋：藍色多瑙河（目標 BPM: 60）</option>
-                        <option value="march">進行曲：拉德斯基（目標 BPM: 108）</option>
-                        <option value="symphony">交響曲：命運之門（目標 BPM: 88）</option>
+                        <option value="newworld">德弗札克：新世界交響曲 第二樂章（目標 BPM: 55）</option>
+                        <option value="ode">貝多芬：第九交響曲 歡樂頌（目標 BPM: 115）</option>
+                        <option value="spring">韋瓦第：四季 春（目標 BPM: 85）</option>
                     </select>
                     <div class="mt-2 text-xs text-gray-400">
                         計算方式：平均節拍法 | 靈敏度調整：420ms
@@ -1477,40 +1480,56 @@
             // 教學模式卡片
             tutorialModeCard.addEventListener('click', function() {
                 modeSelectionPage.classList.add('page-hidden');
+                document.body.style.overflow = 'hidden'; // 防止頁面滾動
                 
                 setTimeout(() => {
                     mainContent.classList.remove('page-hidden');
+                    document.body.style.overflow = ''; // 恢復頁面滾動
                     
-                    // 顯示教學模式面板
-                    connectionPanel.classList.add('hidden');
-                    setupPanel.classList.add('hidden');
+                    // 顯示教學模式面板，隱藏其他面板
                     tutorialPanel.classList.remove('hidden');
+                    gamePanel.classList.add('hidden');
+                    setupPanel.classList.add('hidden');
+                    resultPanel.classList.add('hidden');
+                    connectionPanel.classList.add('hidden');
                     
                     // 初始化節拍器
                     initMetronome();
                     activateLighting();
                     
-                    // 構建音頻上下文
+                    // 確保音頻資源已加載
                     if (!metronomeTickAudio.src) {
                         metronomeTickAudio.src = 'data:audio/wav;base64,UklGRo4DAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0Yb4CAACBgIF/gn2Cf4GBgIB/gH9/gH6AfX9+f4CAf4B+gH2Af3+Af4B+f4B/gH+AgH+Af4B+gIB/gH5/f3+AgH9/f3+AgICAgH9/f4CAgICAf39/gICAgICAf39/gICAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gICAf4CAf4CAgH+AgH+AgIB/gH+AgIB/gIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/f4CAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gIGAgH5/gYGAgX5+gYGBgn5+gYGBgn5+gYGBgn19gYGCg319gIGCg319gIGCg319gIGCg318gIGDhH18gICDhH18f4CDhH18f4CDhH18f4CDhH18f4CDhH59f4CDhH59f4CDhIB9fn+DhIB9fn+EhYF9fX+EhYF9fX+EhYF9fX+EhYJ+fH6EhoN/fH2DhoSAfHyChYSBfXyChYSBfXyChYSBfXyChISCfn2ChISCfn2ChISCfn2ChISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn6BhIOCfn6BhIOCfn+BhIOCfn+BhIOCfn+BhIKCf3+AhIKCf4CAg4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+AgoKCgICAgoKCgICAgoKCgICAgoKCgICAgoKCgICAgYODgYF/gIKDgoF/gIKDgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgH+CgoOBgH9+';
                     }
+                    
+                    console.log("教學模式已載入");
                 }, 400);
             });
             
             // 演奏遊戲卡片
             performanceModeCard.addEventListener('click', function() {
                 modeSelectionPage.classList.add('page-hidden');
+                document.body.style.overflow = 'hidden'; // 防止頁面滾動
                 
                 setTimeout(() => {
                     mainContent.classList.remove('page-hidden');
+                    document.body.style.overflow = ''; // 恢復頁面滾動
                     
-                    // 顯示選曲面板
-                    connectionPanel.classList.add('hidden');
+                    // 顯示選曲面板，隱藏其他面板
                     setupPanel.classList.remove('hidden');
+                    tutorialPanel.classList.add('hidden');
+                    gamePanel.classList.add('hidden');
+                    resultPanel.classList.add('hidden');
+                    connectionPanel.classList.add('hidden');
                     
                     // 使用默認的鍵盤模式提示
                     connectionStatus.textContent = '使用鍵盤空格鍵或上箭頭進行指揮';
                     connectionStatus.classList.add('text-yellow-500');
+                    
+                    // 啟動燈光效果
+                    activateLighting();
+                    
+                    console.log("演奏遊戲模式已載入");
                 }, 400);
             });
             
@@ -1711,26 +1730,26 @@
 
         // 音樂資源設定
         const MUSIC_RESOURCES = {
-            waltz: {
-                url: './audio/TheBlueDanube.mp3',
-                duration: 30,
-                bpm: 60,
-                title: '華爾滋：藍色多瑙河',
-                comment: '優雅的三拍子節奏，如同在宮廷舞會旋轉的舞者'
+            newworld: {
+                url: './audio/01_Antonín_Dvořák_Symphony_9_E_Minor_II_Largo.mp3',
+                duration: 180,
+                bpm: 55,
+                title: '德弗札克：新世界交響曲 (第二樂章)',
+                comment: '深沉優美的慢板旋律，彷彿將聽眾帶入遙遠的新大陸，充滿懷鄉與冥想的氛圍'
             },
-            march: {
-                url: './audio/RadetzkyMarch.mp3',
-                duration: 30,
-                bpm: 108,
-                title: '進行曲：拉德斯基',
-                comment: '精神抖擻的二拍子節奏，引領樂團展現活力與力量'
+            ode: {
+                url: './audio/02_Beethoven_Joy.mp3',
+                duration: 180,
+                bpm: 115,
+                title: '貝多芬：第九交響曲 (歡樂頌)',
+                comment: '氣勢磅礡的合唱交響樂，象徵人類團結與和平的永恆頌歌，充滿喜悅與力量'
             },
-            symphony: {
-                url: './audio/FateSymphony.mp3',
-                duration: 30,
-                bpm: 88,
-                title: '交響曲：命運之門',
-                comment: '雄偉的四拍子節奏，指揮家與樂團的完美協奏'
+            spring: {
+                url: './audio/03_Vivaldi_Spring.mp3',
+                duration: 180,
+                bpm: 85,
+                title: '韋瓦第：四季 (春)',
+                comment: '明亮歡快的小提琴協奏曲，生動描繪春天的活力與大自然蘇醒的景象'
             }
         };
 
