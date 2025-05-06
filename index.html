@@ -1027,12 +1027,9 @@
                 </div>
                 
                 <!-- 節拍器控制按鈕 -->
-                <div class="flex justify-center gap-4 mb-6">
+                <div class="flex justify-center mb-6">
                     <button id="start-metronome" class="elegant-button px-5 py-2">
                         <span id="metronome-toggle-text">開始</span>
-                    </button>
-                    <button id="tap-tempo" class="elegant-button px-5 py-2">
-                        點擊測量BPM
                     </button>
                 </div>
                 
@@ -1333,7 +1330,6 @@
         let metronomeInterval = null;
         let currentMetronomeBpm = 80;
         let metronomeAudio = document.getElementById('metronome-audio');
-        let tapTempoTimestamps = [];
         
         // 舞台燈光和視覺效果
         let stageLighting = document.getElementById('stage-lighting');
@@ -1532,66 +1528,7 @@
             }
         }
 
-        // 點擊測量BPM
-        function tapTempo() {
-            const now = performance.now();
-            
-            // 每次點擊立即提供視覺反饋
-            tapTempoButton.classList.add('bg-conductor-gold/50', 'scale-95', 'shadow-lg', 'shadow-conductor-gold/20');
-            tapTempoButton.style.color = 'rgba(255, 255, 255, 0.95)';
-            
-            // 短暫延遲後恢復原狀
-            setTimeout(() => {
-                tapTempoButton.classList.remove('bg-conductor-gold/50', 'scale-95', 'shadow-lg', 'shadow-conductor-gold/20');
-                tapTempoButton.style.color = '';
-            }, 150);
-            
-            // 如果超過2秒沒有敲擊，重置數據
-            if (tapTempoTimestamps.length > 0 && now - tapTempoTimestamps[tapTempoTimestamps.length - 1] > 2000) {
-                tapTempoTimestamps = [];
-            }
-            
-            tapTempoTimestamps.push(now);
-            
-            // 保持最近10次敲擊
-            if (tapTempoTimestamps.length > 10) {
-                tapTempoTimestamps.shift();
-            }
-            
-            // 至少需要3次敲擊才能計算BPM
-            if (tapTempoTimestamps.length >= 3) {
-                // 計算平均間隔
-                let totalInterval = 0;
-                for (let i = 1; i < tapTempoTimestamps.length; i++) {
-                    totalInterval += tapTempoTimestamps[i] - tapTempoTimestamps[i - 1];
-                }
-                
-                const avgInterval = totalInterval / (tapTempoTimestamps.length - 1);
-                const calculatedBpm = Math.round(60000 / avgInterval);
-                
-                // 更新BPM滑塊和顯示
-                if (calculatedBpm >= 60 && calculatedBpm <= 120) {
-                    bpmSlider.value = calculatedBpm;
-                    bpmValue.textContent = calculatedBpm;
-                    currentMetronomeBpm = calculatedBpm;
-                    
-                    // BPM數值閃爍效果
-                    bpmValue.classList.add('bpm-pulse');
-                    setTimeout(() => {
-                        bpmValue.classList.remove('bpm-pulse');
-                    }, 500);
-                    
-                    // 如果節拍器正在運行，則使用新BPM
-                    if (metronomeActive) {
-                        stopMetronome();
-                        startMetronome();
-                    } else {
-                        // 僅更新擺動動畫
-                        updateMetronomePendulum(calculatedBpm);
-                    }
-                }
-            }
-        }
+        // 移除點擊測量BPM功能
 
         // 添加鍵盤控制支持
         document.addEventListener('keydown', function(event) {
@@ -1683,8 +1620,7 @@
         // 節拍器開始/停止按鈕
         startMetronomeButton.addEventListener('click', toggleMetronome);
 
-        // 點擊測量BPM按鈕
-        tapTempoButton.addEventListener('click', tapTempo);
+        // 移除點擊測量BPM功能相關的事件監聽
 
         // 退出教學模式按鈕
         exitTutorialButton.addEventListener('click', function() {
