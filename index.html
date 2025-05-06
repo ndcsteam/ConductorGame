@@ -758,6 +758,82 @@
             50% { height: 24px; }
             100% { height: 16px; }
         }
+        
+        /* 練習模式區塊樣式 */
+        .practice-panel {
+            border-radius: 8px;
+            background: rgba(26, 26, 26, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 精確度評估 */
+        .accuracy-indicator {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            text-align: center;
+            margin-top: 0.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .accuracy-perfect {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: #81c784;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .accuracy-good {
+            background-color: rgba(255, 152, 0, 0.2);
+            color: #ffb74d;
+            border: 1px solid rgba(255, 152, 0, 0.3);
+        }
+        
+        .accuracy-adjust {
+            background-color: rgba(244, 67, 54, 0.2);
+            color: #e57373;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        
+        /* 垂直分隔線 */
+        .vertical-divider {
+            width: 1px;
+            background: linear-gradient(to bottom, rgba(212, 175, 55, 0), rgba(212, 175, 55, 0.3) 20%, rgba(212, 175, 55, 0.3) 80%, rgba(212, 175, 55, 0));
+            margin: 0 auto;
+        }
+        
+        /* 指揮動畫 */
+        .mini-conductor {
+            width: 100px;
+            height: 150px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .mini-conductor img {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            transition: all 0.2s ease;
+        }
+        
+        /* 提示閃爍 */
+        .beat-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: rgba(212, 175, 55, 0.3);
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            transition: all 0.2s ease;
+        }
+        
+        .beat-indicator.active {
+            background-color: rgba(212, 175, 55, 0.9);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -800,7 +876,7 @@
     </div>
 
     <!-- 主遊戲內容 -->
-    <div id="main-content" class="container mx-auto px-4 py-8 max-w-3xl page-transition page-hidden">
+    <div id="main-content" class="container mx-auto px-4 py-8 max-w-4xl page-transition page-hidden">
         <h1 class="text-3xl font-bold mb-6 text-center text-conductor-gold">NDC交響樂指揮家</h1>
 
         <!-- 遊戲狀態視窗 -->
@@ -986,95 +1062,145 @@
                 </div>
             </div>
 
-            <!-- 教學模式面板 -->
+            <!-- 教學模式面板 - 雙欄版面設計 -->
             <div id="tutorial-panel" class="hidden">
-                <h2 class="text-xl font-semibold mb-4 text-conductor-gold">節拍感受訓練</h2>
+                <h2 class="text-xl font-semibold mb-4 text-center text-conductor-gold">節拍感受與指揮練習</h2>
                 
-                <!-- 節拍器視覺化 -->
-                <div class="flex justify-center items-center mb-6">
-                    <div class="metronome-container">
-                        <div class="metronome-base"></div>
-                        <div class="metronome-body">
-                            <div class="metronome-tick"></div>
-                            <div class="metronome-tick"></div>
-                            <div class="metronome-tick"></div>
+                <!-- 分成左右兩欄 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 左側：節拍感受訓練 -->
+                    <div class="practice-panel p-4">
+                        <h3 class="text-lg font-medium mb-3 text-conductor-gold">節拍感受訓練</h3>
+                        
+                        <!-- 節拍器視覺化 -->
+                        <div class="flex justify-center items-center mb-4">
+                            <div class="metronome-container">
+                                <div class="metronome-base"></div>
+                                <div class="metronome-body">
+                                    <div class="metronome-tick"></div>
+                                    <div class="metronome-tick"></div>
+                                    <div class="metronome-tick"></div>
+                                </div>
+                                <div id="metronome-pendulum" class="metronome-pendulum">
+                                    <div class="metronome-weight"></div>
+                                </div>
+                            </div>
                         </div>
-                        <div id="metronome-pendulum" class="metronome-pendulum">
-                            <div class="metronome-weight"></div>
+                        
+                        <!-- 音頻視覺化 -->
+                        <div class="audio-wave" id="audio-wave">
+                            <!-- 聲音波形會被JS動態生成 -->
+                        </div>
+                        
+                        <!-- BPM控制器 -->
+                        <div class="mb-4">
+                            <div class="flex justify-between mb-1">
+                                <label for="bpm-slider" class="text-sm text-gray-300">BPM:</label>
+                                <span id="bpm-value" class="text-conductor-gold font-bold">80</span>
+                            </div>
+                            <input type="range" id="bpm-slider" min="60" max="120" value="80" step="1" 
+                                   class="w-full h-2 bg-conductor-dark rounded-lg appearance-none cursor-pointer accent-conductor-gold">
+                            
+                            <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                <span>慢 (60)</span>
+                                <span>中 (90)</span>
+                                <span>快 (120)</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 節拍器控制按鈕 -->
+                        <div class="flex justify-center mb-4">
+                            <button id="start-metronome" class="elegant-button px-5 py-2">
+                                <span id="metronome-toggle-text">開始</span>
+                            </button>
+                        </div>
+                        
+                        <!-- BPM 參考範例 -->
+                        <div class="mt-4">
+                            <h4 class="text-sm font-medium mb-2 text-conductor-gold">常見節奏範例</h4>
+                            <div class="space-y-2">
+                                <div class="bpm-example" data-bpm="60">
+                                    <div class="bpm-example-title">60 BPM - 慢板</div>
+                                </div>
+                                
+                                <div class="bpm-example" data-bpm="76">
+                                    <div class="bpm-example-title">76 BPM - 行板</div>
+                                </div>
+                                
+                                <div class="bpm-example" data-bpm="92">
+                                    <div class="bpm-example-title">92 BPM - 中板</div>
+                                </div>
+                                
+                                <div class="bpm-example" data-bpm="108">
+                                    <div class="bpm-example-title">108 BPM - 小快板</div>
+                                </div>
+                                
+                                <div class="bpm-example" data-bpm="120">
+                                    <div class="bpm-example-title">120 BPM - 快板</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- 音頻視覺化 -->
-                <div class="audio-wave" id="audio-wave">
-                    <!-- 聲音波形會被JS動態生成 -->
-                </div>
-                
-                <!-- BPM控制器 -->
-                <div class="mb-6">
-                    <div class="flex justify-between mb-2">
-                        <label for="bpm-slider" class="text-sm text-gray-300">BPM (每分鐘拍子數):</label>
-                        <span id="bpm-value" class="text-conductor-gold font-bold">80</span>
-                    </div>
-                    <input type="range" id="bpm-slider" min="60" max="120" value="80" step="1" 
-                           class="w-full h-2 bg-conductor-dark rounded-lg appearance-none cursor-pointer accent-conductor-gold">
                     
-                    <div class="flex justify-between text-xs text-gray-400 mt-1">
-                        <span>慢 (60)</span>
-                        <span>中等 (90)</span>
-                        <span>快 (120)</span>
+                    <!-- 右側：指揮練習區 -->
+                    <div class="practice-panel p-4">
+                        <h3 class="text-lg font-medium mb-3 text-conductor-gold">指揮練習</h3>
+                        
+                        <!-- 指揮提示 -->
+                        <div class="text-center mb-4 text-sm text-gray-300">
+                            跟隨左側節拍器的節奏，用指揮棒或鍵盤空格鍵進行指揮
+                        </div>
+                        
+                        <!-- 指揮家動畫 -->
+                        <div class="flex justify-center mb-4 relative">
+                            <div class="mini-conductor">
+                                <img id="practice-conductor-image" src="./images/conductorback02.png" alt="指揮家背影" />
+                                <div id="beat-indicator" class="beat-indicator"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- 目前節奏指示器 -->
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="p-3 rounded-lg bg-conductor-dark border border-conductor-gold/10 text-center">
+                                <div class="text-xs text-gray-400 mb-1">目標節奏</div>
+                                <div id="practice-target-bpm" class="text-2xl font-bold text-green-400">80</div>
+                            </div>
+                            <div class="p-3 rounded-lg bg-conductor-dark border border-conductor-gold/10 text-center">
+                                <div class="text-xs text-gray-400 mb-1">您的節奏</div>
+                                <div id="practice-current-bpm" class="text-2xl font-bold text-conductor-gold">--</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 精準度顯示 -->
+                        <div>
+                            <div class="text-sm text-gray-400 mb-2">節奏差異: <span id="practice-bpm-diff" class="text-conductor-gold">--</span></div>
+                            <div class="relative h-6 bg-conductor-dark/70 rounded-full overflow-hidden border border-conductor-gold/10">
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <div class="w-px h-full bg-conductor-gold/30"></div>
+                                </div>
+                                <div id="practice-bpm-indicator" class="absolute top-0 bottom-0 w-4 h-4 bg-conductor-gold rounded-full transform -translate-x-1/2 shadow-lg shadow-conductor-gold/20" style="left: 50%;">
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>過慢</span>
+                                <span>完美</span>
+                                <span>過快</span>
+                            </div>
+                            
+                            <!-- 精確度評估 -->
+                            <div id="practice-accuracy" class="accuracy-indicator mt-3">
+                                請開始指揮
+                            </div>
+                        </div>
+                        
+                        <!-- 鍵盤指示器 -->
+                        <div class="keyboard-indicator mt-4 mb-2">
+                            <div class="key">空格</div>
+                            <span class="text-gray-400 flex items-center mx-2">或</span>
+                            <div class="key">↑</div>
+                            <span class="text-gray-400 flex items-center mx-2">指揮棒</span>
+                        </div>
                     </div>
-                </div>
-                
-                <!-- 節拍器控制按鈕 -->
-                <div class="flex justify-center mb-6">
-                    <button id="start-metronome" class="elegant-button px-5 py-2">
-                        <span id="metronome-toggle-text">開始</span>
-                    </button>
-                </div>
-                
-                <div class="gold-divider my-6"></div>
-                
-                <!-- BPM 參考範例 -->
-                <h3 class="text-lg font-medium mb-3 text-conductor-gold">常見音樂節奏參考</h3>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bpm-example" data-bpm="60">
-                        <div class="bpm-example-title">60 BPM - 慢板</div>
-                        <div class="text-xs text-gray-300">每秒一拍，如慢板華爾滋</div>
-                    </div>
-                    
-                    <div class="bpm-example" data-bpm="76">
-                        <div class="bpm-example-title">76 BPM - 行板</div>
-                        <div class="text-xs text-gray-300">適合優雅漫步的速度</div>
-                    </div>
-                    
-                    <div class="bpm-example" data-bpm="92">
-                        <div class="bpm-example-title">92 BPM - 中板</div>
-                        <div class="text-xs text-gray-300">中等速度，節奏明確</div>
-                    </div>
-                    
-                    <div class="bpm-example" data-bpm="108">
-                        <div class="bpm-example-title">108 BPM - 小快板</div>
-                        <div class="text-xs text-gray-300">如《拉德斯基進行曲》</div>
-                    </div>
-                    
-                    <div class="bpm-example" data-bpm="120">
-                        <div class="bpm-example-title">120 BPM - 快板</div>
-                        <div class="text-xs text-gray-300">活潑有力的節奏</div>
-                    </div>
-                </div>
-                
-                <!-- 指揮提示 -->
-                <div class="mt-6 p-4 bg-conductor-dark/50 rounded-lg border border-conductor-gold/10">
-                    <h4 class="font-medium mb-2 text-conductor-gold">指揮技巧</h4>
-                    <ul class="text-sm text-gray-300 space-y-2">
-                        <li>• 以節奏器為基準，練習精確的指揮動作</li>
-                        <li>• 慢速節奏(60-80 BPM)：動作幅度較大，更具表現力</li>
-                        <li>• 中速節奏(80-100 BPM)：保持穩定的手勢</li>
-                        <li>• 快速節奏(100-120 BPM)：動作簡潔有力</li>
-                        <li>• 點擊「開始指揮」體驗不同樂曲的節奏感</li>
-                    </ul>
                 </div>
                 
                 <!-- 返回按鈕 -->
@@ -1089,8 +1215,6 @@
             <audio id="game-audio" class="hidden"></audio>
             <audio id="metronome-audio" class="hidden"></audio>
         </div>
-
-
     </div>
 
     <script>
@@ -1330,6 +1454,12 @@
         let metronomeInterval = null;
         let currentMetronomeBpm = 80;
         let metronomeAudio = document.getElementById('metronome-audio');
+        let metronomeTickTimer = null;
+        
+        // 練習模式相關變數
+        let practiceTimestamps = [];
+        let practiceLastTimestamp = 0;
+        let practiceBpm = 0;
         
         // 舞台燈光和視覺效果
         let stageLighting = document.getElementById('stage-lighting');
@@ -1400,13 +1530,21 @@
         const bpmValue = document.getElementById('bpm-value');
         const startMetronomeButton = document.getElementById('start-metronome');
         const metronomeToggleText = document.getElementById('metronome-toggle-text');
-        const tapTempoButton = document.getElementById('tap-tempo');
         const metronomeAudioElement = document.getElementById('metronome-audio'); 
-        const metronomeTickSound = new Audio('data:audio/wav;base64,UklGRo4DAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0Yb4CAACBgIF/gn2Cf4GBgIB/gH9/gH6AfX9+f4CAf4B+gH2Af3+Af4B+f4B/gH+AgH+Af4B+gIB/gH5/f3+AgH9/f3+AgICAgH9/f4CAgICAf39/gICAgICAf39/gICAgICAf39/gICAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gICAf4CAf4CAgH+AgH+AgIB/gH+AgIB/gIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/f4CAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gIGAgH5/gYGAgX5+gYGBgn5+gYGBgn5+gYGBgn19gYGCg319gIGCg319gIGCg319gIGCg318gIGDhH18gICDhH18f4CDhH18f4CDhH18f4CDhH18f4CDhH59f4CDhH59f4CDhIB9fn+DhIB9fn+EhYF9fX+EhYF9fX+EhYF9fX+EhYJ+fH6EhoN/fH2DhoSAfHyChYSBfXyChYSBfXyChYSBfXyChISCfn2ChISCfn2ChISCfn2ChISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn6BhIOCfn6BhIOCfn+BhIOCfn+BhIOCfn+BhIKCf3+AhIKCf4CAg4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+AgoKCgICAgoKCgICAgoKCgICAgoKCgICAgoKCgICAgYODgYF/gIKDgoF/gIKDgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgH+CgoOBgH9+');
+        const metronomeTickSound = new Audio('data:audio/wav;base64,UklGRo4DAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0Yb4CAACBgIF/gn2Cf4GBgIB/gH9/gH6AfX9+f4CAf4B+gH2Af3+Af4B+f4B/gH+AgH+Af4B+gIB/gH5/f3+AgH9/f3+AgICAgH9/f4CAgICAf39/gICAgICAf39/gICAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gICAf4CAf4CAgH+AgH+AgIB/gH+AgIB/gIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/f4CAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gIGAgH5/gYGAgX5+gYGBgn5+gYGBgn5+gYGBgn19gYGCg319gIGCg319gIGCg319gIGCg318gIGDhH18gICDhH18f4CDhH18f4CDhH18f4CDhH18f4CDhH59f4CDhH59f4CDhIB9fn+DhIB9fn+EhYF9fX+EhYF9fX+EhYF9fX+EhYJ+fH6EhoN/fH2DhoSAfHyChYSBfXyChYSBfXyChYSBfXyChISCfn2ChISCfn2ChISCfn2ChISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn6BhIOCfn6BhIOCfn+BhIOCfn+BhIOCfn+BhIKCf3+AhIKCf4CAg4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+AgoKCgICAgoKCgICAgoKCgICAgoKCgICAgoKCgICAgYODgYF/gIKDgoF/gIKDgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgH+CgoOBgH9+');
         const metronomeTickAudio = new Audio('data:audio/wav;base64,UklGRo4DAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0Yb4CAACBgIF/gn2Cf4GBgIB/gH9/gH6AfX9+f4CAf4B+gH2Af3+Af4B+f4B/gH+AgH+Af4B+gIB/gH5/f3+AgH9/f3+AgICAgH9/f4CAgICAf39/gICAgICAf39/gICAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4CAf4CAgICAf4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4B/gICAgH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+Af4CAgIB/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gH+AgICAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4B/gICAf4CAf4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+Af4CAgH+AgH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gH+AgIB/gIB/gICAf4CAf4CAgH+AgH+AgIB/gH+AgIB/gIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/gH+AgIB/f4CAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gICAgH9/gIGAgH5/gYGAgX5+gYGBgn5+gYGBgn5+gYGBgn19gYGCg319gIGCg319gIGCg319gIGCg318gIGDhH18gICDhH18f4CDhH18f4CDhH18f4CDhH18f4CDhH59f4CDhH59f4CDhIB9fn+DhIB9fn+EhYF9fX+EhYF9fX+EhYF9fX+EhYJ+fH6EhoN/fH2DhoSAfHyChYSBfXyChYSBfXyChYSBfXyChISCfn2ChISCfn2ChISCfn2ChISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn2BhISCfn6BhIOCfn6BhIOCfn+BhIOCfn+BhIOCfn+BhIKCf3+AhIKCf4CAg4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+Ag4KCgH+AgoKCgICAgoKCgICAgoKCgICAgoKCgICAgoKCgICAgYODgYF/gIKDgoF/gIKDgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgIGCgoGAgH+CgoOBgH9+');
         const exitTutorialButton = document.getElementById('exit-tutorial');
         const metronomeAudioContext = new (window.AudioContext || window.webkitAudioContext)();
         const bpmExamples = document.querySelectorAll('.bpm-example');
+        
+        // 練習面板元素
+        const practiceTargetBpm = document.getElementById('practice-target-bpm');
+        const practiceCurrentBpm = document.getElementById('practice-current-bpm');
+        const practiceBpmDiff = document.getElementById('practice-bpm-diff');
+        const practiceBpmIndicator = document.getElementById('practice-bpm-indicator');
+        const practiceAccuracy = document.getElementById('practice-accuracy');
+        const practiceConductorImage = document.getElementById('practice-conductor-image');
+        const beatIndicator = document.getElementById('beat-indicator');
 
         // 為節拍器創建音頻視覺化
         const audioWave = document.getElementById('audio-wave');
@@ -1422,9 +1560,20 @@
             // 更新BPM顯示
             bpmValue.textContent = bpmSlider.value;
             currentMetronomeBpm = parseInt(bpmSlider.value);
+            practiceTargetBpm.textContent = currentMetronomeBpm;
             
             // 配置節拍器擺動器
             updateMetronomePendulum(currentMetronomeBpm);
+            
+            // 重置練習模式的數據
+            practiceTimestamps = [];
+            practiceLastTimestamp = 0;
+            practiceBpm = 0;
+            practiceCurrentBpm.textContent = '--';
+            practiceBpmDiff.textContent = '--';
+            practiceBpmIndicator.style.left = '50%';
+            practiceAccuracy.textContent = '請開始指揮';
+            practiceAccuracy.className = 'accuracy-indicator';
         }
 
         // 啟動/停止節拍器
@@ -1448,6 +1597,7 @@
             
             // 獲取當前BPM值
             currentMetronomeBpm = parseInt(bpmSlider.value);
+            practiceTargetBpm.textContent = currentMetronomeBpm;
             
             // 設置節拍間隔（毫秒）
             const interval = 60000 / currentMetronomeBpm;
@@ -1472,10 +1622,17 @@
             
             // 清除定時器
             clearInterval(metronomeInterval);
+            if (metronomeTickTimer) {
+                clearTimeout(metronomeTickTimer);
+                metronomeTickTimer = null;
+            }
             
             // 停止擺動動畫
             const pendulum = document.getElementById('metronome-pendulum');
             pendulum.classList.remove('active');
+            
+            // 重置節拍指示器
+            beatIndicator.classList.remove('active');
         }
 
         // 更新節拍器擺動
@@ -1502,6 +1659,19 @@
             
             // 觸發波形動畫
             triggerWaveAnimation();
+            
+            // 節拍指示器效果
+            beatIndicator.classList.add('active');
+            
+            // 清除之前的計時器
+            if (metronomeTickTimer) {
+                clearTimeout(metronomeTickTimer);
+            }
+            
+            // 設置計時器以移除active類
+            metronomeTickTimer = setTimeout(() => {
+                beatIndicator.classList.remove('active');
+            }, 200);
         }
 
         // 波形動畫
@@ -1528,17 +1698,19 @@
             }
         }
 
-        // 移除點擊測量BPM功能
-
         // 添加鍵盤控制支持
         document.addEventListener('keydown', function(event) {
             if (gameActive && (event.code === 'Space' || event.code === 'ArrowUp')) {
                 event.preventDefault();
                 simulateBeat();
+            } else if (tutorialPanel.classList.contains('hidden') === false && (event.code === 'Space' || event.code === 'ArrowUp')) {
+                // 教學模式中的指揮練習
+                event.preventDefault();
+                simulatePracticeBeat();
             }
         });
         
-        // 模擬指揮棒敲擊
+        // 模擬指揮棒敲擊 (正式遊戲)
         function simulateBeat() {
             // 節流處理
             const now = performance.now();
@@ -1556,6 +1728,32 @@
                 isProcessing = false;
             }, 50);
         }
+        
+        // 模擬指揮棒敲擊 (練習模式)
+        function simulatePracticeBeat() {
+            // 只有節拍器啟動時才接受指揮
+            if (!metronomeActive) {
+                practiceAccuracy.textContent = '請先啟動節拍器';
+                practiceAccuracy.className = 'accuracy-indicator';
+                return;
+            }
+            
+            // 節流處理
+            const now = performance.now();
+            if (now - lastSignalTime < throttleTime) {
+                return;
+            }
+            
+            isProcessing = true;
+            lastSignalTime = now;
+            
+            // 處理練習指揮敲擊
+            practiceBeat();
+            
+            setTimeout(() => {
+                isProcessing = false;
+            }, 50);
+        }
 
         // 教學模式BPM範例點擊處理
         bpmExamples.forEach(example => {
@@ -1566,18 +1764,28 @@
                 bpmSlider.value = bpm;
                 bpmValue.textContent = bpm;
                 currentMetronomeBpm = bpm;
+                practiceTargetBpm.textContent = bpm;
                 
                 // 更新節拍器
                 if (metronomeActive) {
                     stopMetronome();
                     startMetronome();
                 } else {
-                    updateMetronomePendulum(bpm);
+                    updateMetronomePendulum(currentMetronomeBpm);
                 }
                 
                 // 顯示選中效果
                 bpmExamples.forEach(ex => ex.classList.remove('border-conductor-gold'));
                 example.classList.add('border-conductor-gold');
+                
+                // 重置練習模式數據
+                practiceTimestamps = [];
+                practiceLastTimestamp = 0;
+                practiceCurrentBpm.textContent = '--';
+                practiceBpmDiff.textContent = '--';
+                practiceBpmIndicator.style.left = '50%';
+                practiceAccuracy.textContent = '已更新目標BPM';
+                practiceAccuracy.className = 'accuracy-indicator';
             });
         });
 
@@ -1607,6 +1815,7 @@
         bpmSlider.addEventListener('input', function() {
             bpmValue.textContent = this.value;
             currentMetronomeBpm = parseInt(this.value);
+            practiceTargetBpm.textContent = currentMetronomeBpm;
             
             // 更新節拍器如果它正在運行
             if (metronomeActive) {
@@ -1615,12 +1824,17 @@
             } else {
                 updateMetronomePendulum(currentMetronomeBpm);
             }
+            
+            // 重置練習模式數據
+            practiceTimestamps = [];
+            practiceLastTimestamp = 0;
+            practiceCurrentBpm.textContent = '--';
+            practiceBpmDiff.textContent = '--';
+            practiceBpmIndicator.style.left = '50%';
         });
 
         // 節拍器開始/停止按鈕
         startMetronomeButton.addEventListener('click', toggleMetronome);
-
-        // 移除點擊測量BPM功能相關的事件監聽
 
         // 退出教學模式按鈕
         exitTutorialButton.addEventListener('click', function() {
@@ -1718,15 +1932,121 @@
                 isProcessing = true;
                 lastSignalTime = now;
                 
-                // 處理加速度檢測
+                // 根據當前模式處理信號
                 if (gameActive) {
+                    // 遊戲模式指揮
                     conductorBeat();
+                } else if (tutorialPanel.classList.contains('hidden') === false && metronomeActive) {
+                    // 教學模式指揮練習
+                    practiceBeat();
                 }
                 
                 // 設定短時間後重置處理標誌，以確保信號處理完畢
                 setTimeout(() => {
                     isProcessing = false;
                 }, 50);
+            }
+        }
+
+        // 練習模式的指揮動作
+        function practiceBeat() {
+            const now = performance.now();
+            
+            // 顯示指揮動作圖片 (抬手)
+            if (practiceConductorImage) {
+                practiceConductorImage.src = './images/conductorback01.png';
+                
+                // 短暫延遲後恢復原來的姿勢
+                setTimeout(() => {
+                    practiceConductorImage.src = './images/conductorback02.png';
+                }, 350);
+            }
+            
+            // 記錄時間戳以計算平均 BPM
+            practiceTimestamps.push(now);
+            
+            // 保持固定數量的樣本 (最近5個)
+            if (practiceTimestamps.length > 5) {
+                practiceTimestamps.shift();
+            }
+            
+            // 必須有上一次時間戳才能計算
+            if (practiceLastTimestamp) {
+                const interval = now - practiceLastTimestamp;
+                
+                // 只有在合理範圍內的間隔才計算 BPM（300-2000ms 大致對應 30-200 BPM）
+                if (interval >= 300 && interval <= 2000) {
+                    // 使用計算平均 BPM 的方法
+                    practiceBpm = calculatePracticeBPM();
+                    
+                    // 更新當前 BPM 顯示
+                    practiceCurrentBpm.textContent = practiceBpm;
+                    practiceCurrentBpm.classList.add('bpm-pulse');
+                    setTimeout(() => {
+                        practiceCurrentBpm.classList.remove('bpm-pulse');
+                    }, 500);
+                    
+                    // 計算與目標 BPM 的差異
+                    const targetBpm = parseInt(practiceTargetBpm.textContent);
+                    const bpmDiff = practiceBpm - targetBpm;
+                    
+                    // 更新 BPM 差異顯示
+                    if (bpmDiff > 0) {
+                        practiceBpmDiff.textContent = `+${bpmDiff} (過快)`;
+                    } else if (bpmDiff < 0) {
+                        practiceBpmDiff.textContent = `${bpmDiff} (過慢)`;
+                    } else {
+                        practiceBpmDiff.textContent = `完美!`;
+                    }
+                    
+                    // 更新 BPM 指示器位置
+                    const indicatorPos = Math.max(0, Math.min(100, 50 + (bpmDiff / targetBpm * 50)));
+                    practiceBpmIndicator.style.left = `${indicatorPos}%`;
+                    
+                    // 根據差異程度更新精確度評估
+                    updatePracticeAccuracy(Math.abs(bpmDiff), targetBpm);
+                }
+            }
+            
+            // 更新最後一次時間戳
+            practiceLastTimestamp = now;
+        }
+        
+        // 練習模式計算BPM
+        function calculatePracticeBPM() {
+            if (practiceTimestamps.length < 2) return 0;
+            
+            // 計算時間間隔（以毫秒為單位）
+            const intervals = [];
+            for (let i = 1; i < practiceTimestamps.length; i++) {
+                intervals.push(practiceTimestamps[i] - practiceTimestamps[i - 1]);
+            }
+            
+            // 計算平均間隔
+            const averageInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
+            
+            // 轉換為 BPM（每分鐘節拍數）
+            return Math.round(60000 / averageInterval);
+        }
+        
+        // 更新練習模式精確度評估
+        function updatePracticeAccuracy(bpmDifference, targetBpm) {
+            // 計算差異比例
+            const diffPercentage = (bpmDifference / targetBpm) * 100;
+            
+            // 重置所有類別
+            practiceAccuracy.classList.remove('accuracy-perfect', 'accuracy-good', 'accuracy-adjust');
+            
+            // 依據差異比例顯示不同評估
+            if (diffPercentage <= 5) {
+                practiceAccuracy.textContent = '完美！節奏精確';
+                practiceAccuracy.classList.add('accuracy-perfect');
+            } else if (diffPercentage <= 10) {
+                practiceAccuracy.textContent = '良好！基本同步';
+                practiceAccuracy.classList.add('accuracy-good');
+            } else {
+                practiceAccuracy.textContent = '需調整節奏';
+                practiceAccuracy.classList.add('accuracy-adjust');
             }
         }
 
