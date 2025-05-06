@@ -1536,6 +1536,16 @@
         function tapTempo() {
             const now = performance.now();
             
+            // 每次點擊立即提供視覺反饋
+            tapTempoButton.classList.add('bg-conductor-gold/50', 'scale-95', 'shadow-lg', 'shadow-conductor-gold/20');
+            tapTempoButton.style.color = 'rgba(255, 255, 255, 0.95)';
+            
+            // 短暫延遲後恢復原狀
+            setTimeout(() => {
+                tapTempoButton.classList.remove('bg-conductor-gold/50', 'scale-95', 'shadow-lg', 'shadow-conductor-gold/20');
+                tapTempoButton.style.color = '';
+            }, 150);
+            
             // 如果超過2秒沒有敲擊，重置數據
             if (tapTempoTimestamps.length > 0 && now - tapTempoTimestamps[tapTempoTimestamps.length - 1] > 2000) {
                 tapTempoTimestamps = [];
@@ -1565,6 +1575,12 @@
                     bpmValue.textContent = calculatedBpm;
                     currentMetronomeBpm = calculatedBpm;
                     
+                    // BPM數值閃爍效果
+                    bpmValue.classList.add('bpm-pulse');
+                    setTimeout(() => {
+                        bpmValue.classList.remove('bpm-pulse');
+                    }, 500);
+                    
                     // 如果節拍器正在運行，則使用新BPM
                     if (metronomeActive) {
                         stopMetronome();
@@ -1573,12 +1589,6 @@
                         // 僅更新擺動動畫
                         updateMetronomePendulum(calculatedBpm);
                     }
-                    
-                    // 顯示"點擊測量BPM"按鈕的反饋
-                    tapTempoButton.classList.add('bg-conductor-gold/30');
-                    setTimeout(() => {
-                        tapTempoButton.classList.remove('bg-conductor-gold/30');
-                    }, 200);
                 }
             }
         }
