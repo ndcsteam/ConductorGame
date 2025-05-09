@@ -2197,26 +2197,28 @@
             }
         }
 
-        // 單次動畫循環（適用於練習模式）
+        // 修改後的單次動畫循環函數（用於練習模式）
         function animateConductorSingleCycle(imageElement, bpm) {
-            if (!bpm || bpm <= 0) {
-                bpm = 80; // 默認BPM
-            }
-            
             // 清除任何現有的動畫計時器
             if (imageElement.animationTimer) {
                 clearTimeout(imageElement.animationTimer);
             }
             
+            // 使用默認值如果未提供BPM
+            if (!bpm || bpm <= 0) {
+                bpm = 80;
+            }
+            
+            // 基準BPM和幀間隔設定
+            const baseBPM = 80;
+            const baseFrameInterval = 50;
+            
+            // 直接計算當前BPM下的幀間隔
+            const frameInterval = baseFrameInterval * (baseBPM / bpm);
+            
             // 設置當前幀和總幀數
             let frame = 1;
             const totalFrames = 16;
-            
-            // 計算完成一個循環的總時間 (秒)
-            const cycleDuration = 60 / bpm;
-            
-            // 計算每一幀的延遲時間 (毫秒)
-            const frameDelay = (cycleDuration * 1000) / totalFrames;
             
             // 更新到第一幀
             imageElement.src = `./animation/conductor/001.png`;
@@ -2230,12 +2232,12 @@
                     imageElement.src = `./animation/conductor/${frameNumber}.png`;
                     
                     // 繼續動畫
-                    imageElement.animationTimer = setTimeout(animateFrame, frameDelay);
+                    imageElement.animationTimer = setTimeout(animateFrame, frameInterval);
                 }
             }
             
             // 啟動動畫
-            imageElement.animationTimer = setTimeout(animateFrame, frameDelay);
+            imageElement.animationTimer = setTimeout(animateFrame, frameInterval);
         }
         
         // 練習模式的指揮動作
@@ -2548,21 +2550,25 @@
             }
         }
 
-        // 啟動指揮家動畫
+        // 修改後的指揮家動畫啟動函數
         function startConductorAnimation(bpm) {
-            // 如果已經在動畫中，先清除之前的動畫
+            // 清除之前的動畫
             if (conductorAnimationTimer) {
                 clearInterval(conductorAnimationTimer);
                 conductorAnimationTimer = null;
             }
             
+            // 使用默認值如果未提供BPM
             if (!bpm || bpm <= 0) {
-                bpm = targetBpm || 80; // 使用預設值
+                bpm = targetBpm || 80;
             }
             
-            // 計算動畫間隔時間（毫秒）- 完成一個循環的時間是 60/bpm 秒
-            const animationDuration = 60000 / bpm; // 完成整個週期的時間
-            const frameInterval = animationDuration / conductorAnimationFrames; // 每幀的間隔
+            // 基準BPM和幀間隔設定
+            const baseBPM = 80;  // 基準BPM值
+            const baseFrameInterval = 50;  // 在80 BPM下每幀的基本間隔（毫秒）
+            
+            // 直接計算當前BPM下的幀間隔
+            const frameInterval = baseFrameInterval * (baseBPM / bpm);
             
             const conductorImage = document.getElementById('conductor-image');
             currentAnimationFrame = 1;
@@ -2835,7 +2841,7 @@
             timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
         }
 
-                // 音樂淡出並結束遊戲
+        // 音樂淡出並結束遊戲
         function fadeOutAudioAndEndGame() {
             // 取消任何正在進行的淡出效果
             if (fadeOutInterval) {
