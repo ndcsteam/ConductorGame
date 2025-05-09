@@ -2220,8 +2220,12 @@
             let frame = 1;
             const totalFrames = 16;
             
+            // 判斷是否為教學模式指揮家
+            const isTeachingMode = imageElement.id === 'practice-conductor-image';
+            const imagePath = isTeachingMode ? './animation/conductor/' : './animation/stage/';
+            
             // 更新到第一幀
-            imageElement.src = `./animation/stage/001.png`;
+            imageElement.src = `${imagePath}001.png`;
             
             // 設置動畫函數
             function animateFrame() {
@@ -2229,7 +2233,7 @@
                 if (frame <= totalFrames) {
                     // 更新圖片源
                     const frameNumber = frame.toString().padStart(3, '0');
-                    imageElement.src = `./animation/stage/${frameNumber}.png`;
+                    imageElement.src = `${imagePath}${frameNumber}.png`;
                     
                     // 繼續動畫
                     imageElement.animationTimer = setTimeout(animateFrame, frameInterval);
